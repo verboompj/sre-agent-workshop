@@ -7,3 +7,7 @@
 .squad-workstream
 infra/bicep/main.json
 node_modules/
+
+# VM workshop runtime artifacts (investigation traces, postmortems, audit logs)
+workshops/vm/output/*
+!workshops/vm/output/.gitkeep

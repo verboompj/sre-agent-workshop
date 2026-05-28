@@ -2,7 +2,7 @@
 
 **Deploy infrastructure, break it on purpose, and watch AI fix it.**
 
-A hands-on workshop that teaches operations teams how the Azure SRE Agent detects, diagnoses, and remediates infrastructure faults in Kubernetes environments. You'll provision real infrastructure, deploy an application, introduce a realistic failure, and observe the SRE Agent investigate and propose a fix via GitHub.
+A hands-on workshop that teaches operations teams how the Azure SRE Agent detects, diagnoses, and remediates infrastructure faults across **Kubernetes and VM-based enterprise workloads**. You'll provision real infrastructure, deploy an application, introduce realistic failures, and observe the SRE Agent investigate and propose fixes via GitHub.
 
 ---
 
@@ -13,6 +13,7 @@ A hands-on workshop that teaches operations teams how the Azure SRE Agent detect
 - **Onboard and configure** the Azure SRE Agent with your GitHub repo and Azure resources
 - **Introduce a realistic fault** (removed role assignment) that breaks application access to CosmosDB
 - **Watch the SRE Agent** detect the failure, trace it through logs/commits, and open a PR to fix it
+- **Run VM migration scenarios** on Windows Server + IIS with approval-gated remediation workflows
 
 By the end of the workshop, you'll understand how modern AI-assisted incident response accelerates MTTR and improves reliability at scale.
 
@@ -61,7 +62,18 @@ When the role assignment is removed, step 3 fails → app returns 500 → SRE Ag
 
 ---
 
-## 📋 Workshop Modules
+## 🧭 Workshop Tracks
+
+This repository now supports two aligned workshop tracks:
+
+| Track | Focus | Entry Point |
+|--------|----------|-----------|
+| **AKS / Cloud-Native** | Kubernetes workload identity, CosmosDB RBAC fault injection | This README + [`docs/`](docs/) |
+| **VM / Enterprise Migration** | Windows Server, IIS, Bastion-first access, VM observability, approval-gated remediation | [`workshops/vm/README.md`](workshops/vm/README.md) |
+
+---
+
+## 📋 AKS Workshop Modules
 
 Each module takes 20–30 minutes and builds on the previous one. **Total workshop time: ~3–4 hours**.
 
@@ -129,6 +141,9 @@ Then follow each module in order. Each one builds on the previous.
 ```
 sre-agent-workshop/
 ├── README.md                              # You are here
+├── workshops/
+│   ├── aks/                               # AKS track entry (compatibility-first)
+│   └── vm/                                # VM track (infra, scripts, docs, tooling)
 ├── docs/
 │   ├── 00-prerequisites.md                # Module 0: Setup & pre-work
 │   ├── 01-deploy-infrastructure.md        # Module 1: Provision Azure
@@ -137,8 +152,7 @@ sre-agent-workshop/
 │   ├── 04-configure-incident-response.md  # Module 4: Alert response
 │   ├── 05-break-it.md                     # Module 5: Introduce fault
 │   ├── 06-watch-sre-agent.md              # Module 6: Observe remediation
-│   ├── 07-cleanup.md                      # Module 7: Clean up
-│   └── plan.md                            # Full implementation plan
+│   └── 07-cleanup.md                      # Module 7: Clean up
 │
 ├── infra/bicep/
 │   ├── main.bicep                         # Bicep orchestrator template
@@ -164,7 +178,9 @@ sre-agent-workshop/
 ├── .github/workflows/
 │   ├── publish-image.yml                  # Build & publish container to ghcr.io
 │   ├── deploy-infra.yml                   # Deploy Bicep to Azure
-│   └── deploy-app.yml                     # Deploy K8s manifests
+│   ├── deploy-vm-infra.yml                # Deploy VM workshop infra
+│   ├── deploy-app.yml                     # Deploy K8s manifests
+│   └── validate-vm-infra.yml              # Validate VM workshop Bicep
 │
 └── scripts/
     ├── setup.sh                           # Pre-workshop validation
