@@ -88,9 +88,9 @@ This is where it gets interesting — the agent asks: *"What changed?"*
 
 The agent will:
 - **Check deployment history** — queries GitHub Actions for recent workflow runs
-- **Find the Bicep deployment** — identifies `deploy-infra.yml` and the exact run that deployed the change
+- **Find the Bicep deployment** — identifies `deploy-aks-infra.yml` and the exact run that deployed the change
 - **Trace to the commit** — connects the workflow run to the specific commit (the one that removed the role assignment)
-- **Read the commit diff** — examines what changed in `infra/bicep/modules/identity.bicep`
+- **Read the commit diff** — examines what changed in `workshops/aks/infra/bicep/modules/identity.bicep`
 
 The agent's reasoning will surface:
 ```
@@ -115,7 +115,7 @@ The agent reads your **Bicep repository** and examines:
 
 **Current Version:**
 ```bicep
-// in infra/bicep/modules/identity.bicep
+// in workshops/aks/infra/bicep/modules/identity.bicep
 resource managedIdentity 'Microsoft.ManagedIdentity/userAssignedIdentities@2023-01-31' = {
   name: identityName
   location: location
@@ -246,7 +246,7 @@ role assignment, preventing the application from authenticating to CosmosDB.
 
 ### Why did it happen?
 Deployment commit abc123 removed the role assignment from 
-infra/bicep/modules/identity.bicep.
+workshops/aks/infra/bicep/modules/identity.bicep.
 
 ### What's the impact?
 All requests to the /items endpoint return HTTP 500 (Internal Server Error).
@@ -265,7 +265,7 @@ identity, allowing the application to authenticate successfully.
 
 ### Files Changed
 Click on the **"Files changed"** tab:
-- You'll see changes to `infra/bicep/modules/identity.bicep`
+- You'll see changes to `workshops/aks/infra/bicep/modules/identity.bicep`
 - The diff shows the role assignment block being restored (green lines)
 - Look for exactly the code block that was commented out in Module 5
 
@@ -513,7 +513,7 @@ What you just experienced is the **full incident lifecycle**, compressed into 10
 
 ## Next Step
 
-→ **[Module 7: Cleanup](./07-cleanup.md)** — Tear down resources, discuss lessons learned, and wrap up the workshop.
+→ **[Module 7: Cleanup](./99-cleanup.md)** — Tear down resources, discuss lessons learned, and wrap up the workshop.
 
 ---
 

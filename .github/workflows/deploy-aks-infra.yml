@@ -1,6 +1,6 @@
 # Deploys Bicep infrastructure (AKS, CosmosDB, monitoring, identity) to Azure.
 # Manual dispatch only — participants choose their region and workload name explicitly.
-# Push-based validation (syntax check + what-if) is handled by validate-infra.yml.
+# Push-based validation (syntax check + what-if) is handled by validate-aks-infra.yml.
 name: Deploy AKS Infrastructure
 
 on:
