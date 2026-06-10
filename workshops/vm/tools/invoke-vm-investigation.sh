@@ -26,11 +26,6 @@ while [ $# -gt 0 ]; do
   esac
 done
 
-case "$SCENARIO" in
-  disk-full|iis-app-pool|cpu-runaway) ;;
-  *) echo "Invalid scenario: $SCENARIO. Allowed: disk-full, iis-app-pool, cpu-runaway." >&2; exit 2 ;;
-esac
-
 mkdir -p "$OUTPUT_DIR"
 
 TS=$(date '+%Y%m%d-%H%M%S')
@@ -49,17 +44,12 @@ write_stage() {
 write_stage "Observe" "Received alert for scenario '$SCENARIO' on VM '$VM_NAME'."
 write_stage "Investigate" "Collecting telemetry from Azure Monitor and VM runtime state."
 
-case "$SCENARIO" in
-  disk-full)
-    KQL="Perf | where ObjectName == 'LogicalDisk' and CounterName == '% Free Space' and InstanceName == 'C:' | where Computer has '$VM_NAME' | top 5 by TimeGenerated desc"
-    ;;
-  iis-app-pool)
-    KQL="Event | where Computer has '$VM_NAME' | where RenderedDescription has 'stopped' or Source has 'IIS' | top 5 by TimeGenerated desc"
-    ;;
-  *)
-    KQL="Perf | where ObjectName == 'Processor' and CounterName == '% Processor Time' and InstanceName == '_Total' | where Computer has '$VM_NAME' | top 5 by TimeGenerated desc"
-    ;;
-esac
+QUERY_FILE="$SCRIPT_DIR/../scenarios/$SCENARIO/query.kql"
+if [ ! -f "$QUERY_FILE" ]; then
+  echo "Unknown scenario '$SCENARIO': no query file at $QUERY_FILE" >&2
+  exit 2
+fi
+KQL=$(sed "s/{{VM_NAME}}/$VM_NAME/g" "$QUERY_FILE")
 
 if [ -n "$WORKSPACE_ID" ]; then
   if az monitor log-analytics query -w "$WORKSPACE_ID" --analytics-query "$KQL" -o json >/dev/null 2>&1; then

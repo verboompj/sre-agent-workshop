@@ -5,7 +5,7 @@ param(
     [string]$WorkspaceId,
     [string]$ResourceGroup = "rg-srelabvm",
     [string]$VmName = "srelabvm-vm01",
-    [ValidateSet("disk-full", "iis-app-pool", "cpu-runaway")][string]$Scenario = "disk-full"
+    [string]$Scenario = "disk-full"
 )
 
 if (-not (Test-Path "$PSScriptRoot\..\output")) {
@@ -25,17 +25,11 @@ function Write-Stage {
 Write-Stage "Observe" "Received alert for scenario '$Scenario' on VM '$VmName'."
 Write-Stage "Investigate" "Collecting telemetry from Azure Monitor and VM runtime state."
 
-$kql = switch ($Scenario) {
-    "disk-full" {
-        "Perf | where ObjectName == 'LogicalDisk' and CounterName == '% Free Space' and InstanceName == 'C:' | where Computer has '$VmName' | top 5 by TimeGenerated desc"
-    }
-    "iis-app-pool" {
-        "Event | where Computer has '$VmName' | where RenderedDescription has 'stopped' or Source has 'IIS' | top 5 by TimeGenerated desc"
-    }
-    default {
-        "Perf | where ObjectName == 'Processor' and CounterName == '% Processor Time' and InstanceName == '_Total' | where Computer has '$VmName' | top 5 by TimeGenerated desc"
-    }
+$queryFile = Join-Path $PSScriptRoot "..\scenarios\$Scenario\query.kql"
+if (-not (Test-Path $queryFile)) {
+    throw "Unknown scenario '$Scenario': no query file at $queryFile"
 }
+$kql = (Get-Content $queryFile -Raw).Replace('{{VM_NAME}}', $VmName)
 
 if ($WorkspaceId) {
     $queryResult = az monitor log-analytics query -w $WorkspaceId --analytics-query $kql -o json 2>$null
