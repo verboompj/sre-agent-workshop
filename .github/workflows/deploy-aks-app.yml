@@ -1,7 +1,7 @@
 # Deploys the workshop web application to AKS.
 # Substitutes Azure resource values into K8s manifests and applies them.
 # Manual dispatch only — ensures the workload name matches your actual deployment.
-name: Deploy Application
+name: Deploy AKS Application
 
 on:
   workflow_dispatch:
@@ -59,20 +59,20 @@ jobs:
           OWNER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
 
           # Namespace first
-          kubectl apply -f k8s/namespace.yaml
+          kubectl apply -f workshops/aks/k8s/namespace.yaml
 
           # ServiceAccount — substitute the UAMI client ID
-          sed "s|\${AZURE_CLIENT_ID}|${AZURE_CLIENT_ID}|g" k8s/service-account.yaml \
+          sed "s|\${AZURE_CLIENT_ID}|${AZURE_CLIENT_ID}|g" workshops/aks/k8s/service-account.yaml \
             | kubectl apply -f -
 
           # Deployment — substitute CosmosDB endpoint and image owner
           sed -e "s|\${COSMOSDB_ENDPOINT}|${COSMOSDB_ENDPOINT}|g" \
               -e "s|OWNER|${OWNER}|g" \
-              k8s/deployment.yaml \
+              workshops/aks/k8s/deployment.yaml \
             | kubectl apply -f -
 
           # Service
-          kubectl apply -f k8s/service.yaml
+          kubectl apply -f workshops/aks/k8s/service.yaml
 
       - name: Wait for rollout
         run: |

@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
   push:
     branches: [main]
-    paths: ['src/**']
+    paths: ['workshops/aks/src/**']
 
 permissions:
   packages: write
@@ -33,7 +33,7 @@ jobs:
       - name: Build and push image
         uses: docker/build-push-action@v6
         with:
-          context: src/app
+          context: workshops/aks/src/app
           push: true
           tags: |
             ghcr.io/${{ steps.repo.outputs.name }}/app:latest

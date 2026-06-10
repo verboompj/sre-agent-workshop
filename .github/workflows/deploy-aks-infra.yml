@@ -1,7 +1,7 @@
 # Deploys Bicep infrastructure (AKS, CosmosDB, monitoring, identity) to Azure.
 # Manual dispatch only — participants choose their region and workload name explicitly.
 # Push-based validation (syntax check + what-if) is handled by validate-infra.yml.
-name: Deploy Infrastructure
+name: Deploy AKS Infrastructure
 
 on:
   workflow_dispatch:
@@ -50,8 +50,8 @@ jobs:
         run: |
           az deployment group create \
             --resource-group "rg-${{ env.WORKLOAD }}" \
-            --template-file infra/bicep/main.bicep \
-            --parameters infra/bicep/main.bicepparam \
+            --template-file workshops/aks/infra/bicep/main.bicep \
+            --parameters workshops/aks/infra/bicep/main.bicepparam \
               location="${{ env.LOCATION }}" \
               workloadName="${{ env.WORKLOAD }}" \
             --query 'properties.outputs' \
