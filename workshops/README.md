@@ -18,3 +18,13 @@ Both tracks follow the same workshop philosophy:
 - [AKS Workshop](./aks/README.md)
 - [VM Workshop](./vm/README.md)
 
+## Scenario indexes
+
+- [AKS scenarios](./aks/scenarios/INDEX.md)
+- [VM scenarios](./vm/scenarios/INDEX.md)
+
+## Adding a scenario
+
+Run `scripts/new-scenario.sh <track> <id> "<Title>"` from the repo root, then follow the
+printed checklist. See [CONTRIBUTING.md](../CONTRIBUTING.md) for the full flow.
+
