@@ -1,0 +1,56 @@
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+import Ajv from 'ajv/dist/2020.js';
+import addFormats from 'ajv-formats';
+import { REPO_ROOT } from './paths.js';
+
+export function makeValidator() {
+  const schema = JSON.parse(
+    readFileSync(resolve(REPO_ROOT, 'schemas', 'scenario.schema.json'), 'utf8')
+  );
+  const ajv = new Ajv({ allErrors: true, strict: false });
+  addFormats(ajv);
+  return ajv.compile(schema);
+}
+
+// Pure cross-field validation. `fileExists` and `isExecutable` are injected so
+// the logic is testable without touching the filesystem. Executable checks
+// apply only to `.sh` scripts.
+export function checkScenario({ track, id, manifest, dir }, { fileExists, isExecutable = () => true }) {
+  const errors = [];
+
+  if (manifest.id !== id) errors.push(`id "${manifest.id}" must equal folder name "${id}"`);
+  if (manifest.track !== track) errors.push(`track "${manifest.track}" must equal parent track "${track}"`);
+
+  for (const f of ['scenario.yaml', manifest.docPage].filter(Boolean)) {
+    if (!fileExists(resolve(dir, f))) errors.push(`missing required file ${f}`);
+  }
+
+  const checkScript = (label, f) => {
+    if (!f) { errors.push(`${label} is required`); return; }
+    if (!fileExists(resolve(dir, f))) { errors.push(`${label} references missing file ${f}`); return; }
+    if (f.endsWith('.sh') && !isExecutable(resolve(dir, f))) {
+      errors.push(`${label} ${f} must be executable (chmod +x)`);
+    }
+  };
+
+  for (const kind of ['inject', 'validate']) {
+    const pair = manifest[kind] ?? {};
+    checkScript(`${kind}.bash`, pair.bash);
+    checkScript(`${kind}.powershell`, pair.powershell);
+  }
+
+  for (const action of manifest.remediate ?? []) {
+    checkScript(`remediate.${action.action}.bash`, action.bash);
+    checkScript(`remediate.${action.action}.powershell`, action.powershell);
+  }
+
+  if (manifest.signal?.alertModule && !fileExists(resolve(dir, manifest.signal.alertModule))) {
+    errors.push(`signal.alertModule references missing file ${manifest.signal.alertModule}`);
+  }
+  if (manifest.investigation?.query && !fileExists(resolve(dir, manifest.investigation.query))) {
+    errors.push(`investigation.query references missing file ${manifest.investigation.query}`);
+  }
+
+  return errors;
+}
