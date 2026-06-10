@@ -1123,7 +1123,7 @@ jobs:
 
 - [ ] **Step 2: Lint the workflow YAML locally**
 
-Run: `node -e "const y=require('/usr/lib/node_modules/js-yaml')||require('js-yaml'); " 2>/dev/null; cd scripts/scenario-tools && node -e "const fs=require('fs'); import('js-yaml').then(y=>{y.default.load(fs.readFileSync('../../.github/workflows/validate-scenarios.yml','utf8'));console.log('workflow YAML OK')})"`
+Run: `cd scripts/scenario-tools && node --input-type=module -e "import fs from 'node:fs'; import yaml from 'js-yaml'; yaml.load(fs.readFileSync('../../.github/workflows/validate-scenarios.yml','utf8')); console.log('workflow YAML OK')"`
 Expected: prints `workflow YAML OK`.
 
 - [ ] **Step 3: Commit**
