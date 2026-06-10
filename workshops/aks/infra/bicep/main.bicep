@@ -120,48 +120,15 @@ resource restartAlert 'Microsoft.Insights/scheduledQueryRules@2023-03-15-preview
 }
 
 // ──────────────────────────────────────────────
-// 6. Alert: HTTP 500 errors in container logs
-//    Fires when the app returns repeated 5xx errors
-//    (e.g., CosmosDB auth failure after RBAC break)
+// 6. Per-scenario alerts (generated from workshops/aks/scenarios/*)
 // ──────────────────────────────────────────────
-resource http500Alert 'Microsoft.Insights/scheduledQueryRules@2023-03-15-preview' = {
-  name: '${workloadName}-http-500-errors'
-  location: location
-  tags: tags
-  properties: {
-    displayName: 'HTTP 500 Errors Detected'
-    description: 'Fires when the workshop app logs error responses in container logs — typically caused by CosmosDB connectivity or RBAC failures.'
-    severity: 3
-    enabled: true
-    evaluationFrequency: 'PT5M'
-    windowSize: 'PT5M'
-    scopes: [
-      aks.outputs.clusterId
-    ]
-    criteria: {
-      allOf: [
-        {
-          query: '''
-            let workshopContainers = KubePodInventory
-            | where Namespace == "workshop"
-            | where TimeGenerated > ago(1h)
-            | distinct ContainerID;
-            ContainerLog
-            | where ContainerID in (workshopContainers)
-            | where LogEntry has "Failed to read items from CosmosDB" or LogEntry has "RBAC" or LogEntry has "StatusCode: 500" or LogEntry has "Forbidden"
-            | summarize ErrorCount = count() by bin(TimeGenerated, 5m)
-          '''
-          timeAggregation: 'Count'
-          operator: 'GreaterThan'
-          threshold: 0
-          failingPeriods: {
-            numberOfEvaluationPeriods: 1
-            minFailingPeriodsToAlert: 1
-          }
-        }
-      ]
-    }
-    autoMitigate: true
+module scenarioAlerts 'modules/scenario-alerts.bicep' = {
+  name: 'scenario-alerts'
+  params: {
+    location: location
+    workloadName: workloadName
+    tags: tags
+    clusterId: aks.outputs.clusterId
   }
 }
 
