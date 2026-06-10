@@ -1,0 +1,48 @@
+name: Validate Scenarios
+
+on:
+  push:
+    paths:
+      - 'workshops/**/scenarios/**'
+      - 'schemas/scenario.schema.json'
+      - 'scripts/scenario-tools/**'
+  pull_request:
+    paths:
+      - 'workshops/**/scenarios/**'
+      - 'schemas/scenario.schema.json'
+      - 'scripts/scenario-tools/**'
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install scenario-tools
+        working-directory: scripts/scenario-tools
+        run: npm ci
+
+      - name: Unit tests
+        working-directory: scripts/scenario-tools
+        run: npm test
+
+      - name: Validate scenarios (schema + drift)
+        run: node scripts/scenario-tools/bin/validate.js
+
+      - name: Set up Bicep
+        run: az bicep install
+
+      - name: Build all scenario + aggregator bicep
+        run: |
+          shopt -s nullglob
+          for f in workshops/*/scenarios/*/alert.bicep workshops/*/infra/bicep/modules/scenario-alerts.bicep; do
+            echo "Building $f"
+            az bicep build --file "$f" --stdout > /dev/null
+          done
