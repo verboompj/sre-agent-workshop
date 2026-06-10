@@ -54,3 +54,18 @@ export function checkScenario({ track, id, manifest, dir }, { fileExists, isExec
 
   return errors;
 }
+
+// Approval-gate actions are resolved by globbing scenarios/*/<action>.sh, so an
+// action name must be unique within a track. Returns [{action, ids}] for clashes.
+export function findDuplicateActions(scenarios) {
+  const byAction = new Map();
+  for (const s of scenarios) {
+    for (const r of s.manifest.remediate ?? []) {
+      if (!byAction.has(r.action)) byAction.set(r.action, []);
+      byAction.get(r.action).push(s.id);
+    }
+  }
+  return [...byAction.entries()]
+    .filter(([, ids]) => ids.length > 1)
+    .map(([action, ids]) => ({ action, ids }));
+}

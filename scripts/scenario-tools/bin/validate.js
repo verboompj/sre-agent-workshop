@@ -2,7 +2,7 @@ import { existsSync, readFileSync, statSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { WORKSHOPS_DIR } from '../lib/paths.js';
 import { listTracks, scenarioDirs, loadScenario } from '../lib/scenarios.js';
-import { makeValidator, checkScenario } from '../lib/validate.js';
+import { makeValidator, checkScenario, findDuplicateActions } from '../lib/validate.js';
 import { renderIndex, renderAggregator, renderReadmeBlock, README_BEGIN, README_END } from '../lib/generate.js';
 
 const fileExists = (p) => existsSync(p);
@@ -23,6 +23,10 @@ for (const track of listTracks()) {
       continue;
     }
     for (const e of checkScenario(s, { fileExists, isExecutable })) fail(`${track}/${s.id}: ${e}`);
+  }
+
+  for (const dup of findDuplicateActions(scenarios)) {
+    fail(`${track}: remediation action "${dup.action}" is defined by multiple scenarios (${dup.ids.join(', ')}); action names must be unique per track`);
   }
 
   const trackDir = resolve(WORKSHOPS_DIR, track);

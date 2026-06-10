@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { checkScenario } from '../lib/validate.js';
+import { checkScenario, findDuplicateActions } from '../lib/validate.js';
 
 const baseManifest = {
   id: 'disk-full', title: 'Disk Full', track: 'vm', summary: 's', severity: 2,
@@ -50,4 +50,21 @@ test('non-executable .sh is reported', () => {
     { fileExists, isExecutable: () => false }
   );
   assert.ok(errs.some((e) => e.includes('must be executable')));
+});
+
+test('findDuplicateActions flags an action reused across scenarios', () => {
+  const scenarios = [
+    { id: 'a', manifest: { remediate: [{ action: 'restart' }] } },
+    { id: 'b', manifest: { remediate: [{ action: 'restart' }, { action: 'flush' }] } },
+  ];
+  const dups = findDuplicateActions(scenarios);
+  assert.deepEqual(dups, [{ action: 'restart', ids: ['a', 'b'] }]);
+});
+
+test('findDuplicateActions returns empty when all unique', () => {
+  const scenarios = [
+    { id: 'a', manifest: { remediate: [{ action: 'cleanup-disk' }] } },
+    { id: 'b', manifest: { remediate: [{ action: 'start-iis-app-pool' }] } },
+  ];
+  assert.deepEqual(findDuplicateActions(scenarios), []);
 });
