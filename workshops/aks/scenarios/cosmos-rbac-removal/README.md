@@ -64,10 +64,10 @@ git commit -m "cleanup: remove unused CosmosDB role assignment"
 git push origin main
 ```
 
-When you push, the `Validate Infrastructure` workflow runs automatically — it checks Bicep syntax and shows a what-if preview of the changes. But it doesn't deploy anything. To actually deploy the broken infrastructure:
+When you push, the `Validate AKS Infrastructure` workflow runs automatically — it checks Bicep syntax and shows a what-if preview of the changes. But it doesn't deploy anything. To actually deploy the broken infrastructure:
 
 1. **Go to GitHub** → your fork → **Actions** tab
-2. **Select "Deploy Infrastructure"** in the left sidebar
+2. **Select "Deploy AKS Infrastructure"** in the left sidebar
 3. **Click "Run workflow"** → choose your region and workload name → **Run workflow**
 4. **Watch it complete** (~3–5 minutes)
 
@@ -165,7 +165,7 @@ Your Azure Monitor alert will detect the spike in failed requests. The SRE Agent
 5. **Read the Bicep code** to understand what changed
 6. **Identify the root cause:** missing role assignment
 7. **Propose a fix** and open a PR on your fork
-8. **If you configured it for Autonomous mode,** the agent will merge the PR — you then trigger the `Deploy Infrastructure` workflow to apply the fix
+8. **If you configured it for Autonomous mode,** the agent will merge the PR — you then trigger the `Deploy AKS Infrastructure` workflow to apply the fix
 
 You don't need to fix this yourself. **Don't troubleshoot.** Don't manually restore the role assignment. Let the SRE Agent do its job. Head to Module 6 to watch it work.
 

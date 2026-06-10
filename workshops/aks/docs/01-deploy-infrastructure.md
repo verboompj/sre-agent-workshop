@@ -77,7 +77,7 @@ Choose one of the two deployment options below. **Option A (GitHub Actions) is r
 
 Go to your fork of the workshop repository on GitHub:
 1. Click the **Actions** tab at the top
-2. In the left sidebar, select **Deploy Infrastructure** workflow
+2. In the left sidebar, select **Deploy AKS Infrastructure** workflow
 
 #### Step 2: Trigger the Workflow
 
@@ -239,7 +239,7 @@ echo "Save this for Module 2: $UAMI_CLIENT_ID"
 ```
 
 **Note on GitHub Actions vs. Local Deployment:**  
-The `Deploy Infrastructure` workflow is triggered manually via `workflow_dispatch`. After making Bicep changes (like in Module 5), you push your code and then manually trigger the deployment — this ensures you always deploy with the correct region and workload name. A separate `Validate Infrastructure` workflow runs automatically on push and PRs to check Bicep syntax and show a what-if preview. If deploying locally, you can still complete Module 5 by re-running the deployment commands after making the Bicep change.
+The `Deploy AKS Infrastructure` workflow is triggered manually via `workflow_dispatch`. After making Bicep changes (like in Module 5), you push your code and then manually trigger the deployment — this ensures you always deploy with the correct region and workload name. A separate `Validate AKS Infrastructure` workflow runs automatically on push and PRs to check Bicep syntax and show a what-if preview. If deploying locally, you can still complete Module 5 by re-running the deployment commands after making the Bicep change.
 
 ## Verify Resources in Azure
 
