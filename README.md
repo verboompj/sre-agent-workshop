@@ -48,7 +48,7 @@ This workshop runs on Azure resources that incur real costs. The following estim
 | SRE Agent | ~$0.50 | Depends on model provider and investigation volume |
 | **Total** | **~$1.00/hr** | ~$4–6 for full workshop |
 
-**Budget recommendation: Set aside $10 to be safe.** Remember to run **Module 7 (Cleanup)** when done—resources still incur costs when left running.
+**Budget recommendation: Set aside $10 to be safe.** Remember to run the **Cleanup** module when done—resources still incur costs when left running.
 
 ---
 
@@ -127,7 +127,7 @@ The Azure SRE Agent is available in **East US 2**, **Sweden Central**, and **Aus
 The AKS cluster must be public (not private). The SRE Agent needs network access to query cluster logs and metrics.
 
 ### Cleanup is Critical
-Resources like AKS and CosmosDB incur hourly costs even if idle. **Always run Module 7 (Cleanup)** to delete resources when done. A forgotten cluster can cost $20–30 overnight.
+Resources like AKS and CosmosDB incur hourly costs even if idle. **Always run the Cleanup module** to delete resources when done. A forgotten cluster can cost $20–30 overnight.
 
 ### Production Use
 This workshop is designed for learning. Do not use these patterns (especially Autonomous autonomy level) in production without additional controls, approval gates, and testing.

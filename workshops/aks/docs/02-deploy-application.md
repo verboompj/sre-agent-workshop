@@ -136,7 +136,7 @@ kubectl describe pod -n workshop <pod-name>
 ```
 The workflow pulls from `ghcr.io/<owner>/sre-agent-workshop/app:latest`. The image is publicly available — no authentication is needed. Common causes:
 - The `OWNER` placeholder wasn't substituted (check the image URL in the pod events)
-- The image hasn't been published yet for your fork — run the **Publish Container Image** workflow first (push any change to `src/` on main, or run it manually)
+- The image hasn't been published yet for your fork — run the **Publish Container Image** workflow first (push any change to `workshops/aks/src/` on main, or run it manually)
 - A `latest-broken` tag exists for the fault-injection scenario in Module 5 — make sure you're using `latest` for initial deployment
 
 **`/items` returns 500 with auth error:**
