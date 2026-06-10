@@ -213,7 +213,7 @@ git commit -m "feat(scenarios): scaffold scenario-tools node package"
 
 Run:
 ```bash
-cd scripts/scenario-tools && node -e "import('ajv').then(async ({default:Ajv})=>{const af=(await import('ajv-formats')).default;const fs=await import('node:fs');const a=new Ajv({allErrors:true,strict:false});af(a);a.compile(JSON.parse(fs.readFileSync('../../schemas/scenario.schema.json','utf8')));console.log('schema OK')})"
+cd scripts/scenario-tools && node -e "import('ajv/dist/2020.js').then(async ({default:Ajv})=>{const af=(await import('ajv-formats')).default;const fs=await import('node:fs');const a=new Ajv({allErrors:true,strict:false});af(a);a.compile(JSON.parse(fs.readFileSync('../../schemas/scenario.schema.json','utf8')));console.log('schema OK')})"
 ```
 Expected: prints `schema OK`.
 
@@ -298,7 +298,7 @@ Expected: FAIL — cannot find module `../lib/validate.js`.
 ```js
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import Ajv from 'ajv';
+import Ajv from 'ajv/dist/2020.js';
 import addFormats from 'ajv-formats';
 import { REPO_ROOT } from './paths.js';
 
