@@ -8,6 +8,11 @@ param(
     [string]$Scenario = "disk-full"
 )
 
+$queryFile = Join-Path $PSScriptRoot "..\scenarios\$Scenario\query.kql"
+if (-not (Test-Path $queryFile)) {
+    throw "Unknown scenario '$Scenario': no query file at $queryFile"
+}
+
 if (-not (Test-Path "$PSScriptRoot\..\output")) {
     New-Item -Path "$PSScriptRoot\..\output" -ItemType Directory | Out-Null
 }
@@ -25,10 +30,6 @@ function Write-Stage {
 Write-Stage "Observe" "Received alert for scenario '$Scenario' on VM '$VmName'."
 Write-Stage "Investigate" "Collecting telemetry from Azure Monitor and VM runtime state."
 
-$queryFile = Join-Path $PSScriptRoot "..\scenarios\$Scenario\query.kql"
-if (-not (Test-Path $queryFile)) {
-    throw "Unknown scenario '$Scenario': no query file at $queryFile"
-}
 $kql = (Get-Content $queryFile -Raw).Replace('{{VM_NAME}}', $VmName)
 
 if ($WorkspaceId) {

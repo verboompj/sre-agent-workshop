@@ -26,6 +26,12 @@ while [ $# -gt 0 ]; do
   esac
 done
 
+QUERY_FILE="$SCRIPT_DIR/../scenarios/$SCENARIO/query.kql"
+if [ ! -f "$QUERY_FILE" ]; then
+  echo "Unknown scenario '$SCENARIO': no query file at $QUERY_FILE" >&2
+  exit 2
+fi
+
 mkdir -p "$OUTPUT_DIR"
 
 TS=$(date '+%Y%m%d-%H%M%S')
@@ -44,11 +50,6 @@ write_stage() {
 write_stage "Observe" "Received alert for scenario '$SCENARIO' on VM '$VM_NAME'."
 write_stage "Investigate" "Collecting telemetry from Azure Monitor and VM runtime state."
 
-QUERY_FILE="$SCRIPT_DIR/../scenarios/$SCENARIO/query.kql"
-if [ ! -f "$QUERY_FILE" ]; then
-  echo "Unknown scenario '$SCENARIO': no query file at $QUERY_FILE" >&2
-  exit 2
-fi
 KQL=$(sed "s/{{VM_NAME}}/$VM_NAME/g" "$QUERY_FILE")
 
 if [ -n "$WORKSPACE_ID" ]; then
