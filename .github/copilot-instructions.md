@@ -20,13 +20,12 @@ When adding or changing anything, prefer the scenario tooling and keep the per-t
 
 ```
 docs/                         # Shared, track-agnostic concept layer (00-what / 01-why / 02-how)
-  knowledge/                  # SRE Agent knowledge files (operational-guidelines.md)
-  0X-*.md                     # Redirect stubs → moved AKS module docs (kept for old links)
 workshops/<track>/
   README.md                   # Track landing (+ generated scenario table between markers)
   docs/                       # Module walkthroughs
   infra/bicep/                # Bicep; main.bicep calls generated modules/scenario-alerts.bicep
   scenarios/<id>/             # Self-contained fault scenarios (+ generated INDEX.md)
+  knowledge/                  # SRE Agent knowledge files (aks: operational-guidelines.md)
   ...                         # Track-specific: aks has k8s/, src/app/; vm has tools/
 schemas/scenario.schema.json  # The scenario manifest contract (JSON Schema draft 2020-12)
 scripts/
@@ -121,7 +120,7 @@ The authoritative contract is `schemas/scenario.schema.json`.
 
 - **Concept layer:** `docs/00-what-is-sre-agent.md`, `01-why-sre-agent.md`, `02-how-it-works.md`
   (track-agnostic).
-- **Operational guidelines:** `docs/knowledge/operational-guidelines.md` is uploaded to the SRE Agent
+- **Operational guidelines:** `workshops/aks/knowledge/operational-guidelines.md` is uploaded to the SRE Agent
   as a knowledge file. It mandates **no direct Azure changes** — every fix goes through a GitHub issue
   assigned to `@copilot`, which opens a PR; an operator then **manually** triggers the track's deploy
   workflow. Keep this file consistent with the actual (manual-deploy) model.

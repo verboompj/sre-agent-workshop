@@ -91,12 +91,12 @@ sre-agent-workshop/
 ├── docs/                         # Shared, track-agnostic concept layer
 │   ├── 00-what-is-sre-agent.md
 │   ├── 01-why-sre-agent.md
-│   ├── 02-how-it-works.md
-│   └── knowledge/                # SRE Agent knowledge files (operational guidelines)
+│   └── 02-how-it-works.md
 ├── workshops/
 │   ├── aks/                      # AKS / Cloud-Native track
 │   │   ├── README.md
 │   │   ├── docs/                 # Module walkthroughs (00-04, 90, 99)
+│   │   ├── knowledge/            # SRE Agent knowledge files (operational guidelines)
 │   │   ├── infra/bicep/          # Bicep modules + generated scenario-alerts
 │   │   ├── k8s/                  # Kubernetes manifests
 │   │   ├── src/app/              # Node.js web app

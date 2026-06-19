@@ -18,7 +18,7 @@
 
 ## Key concepts referenced elsewhere in this repo
 
-- Operational guidelines → [`docs/knowledge/operational-guidelines.md`](./knowledge/operational-guidelines.md)
+- Operational guidelines (AKS track) → [`workshops/aks/knowledge/operational-guidelines.md`](../workshops/aks/knowledge/operational-guidelines.md)
 - Why it matters → [01-why-sre-agent.md](./01-why-sre-agent.md)
 - How the loop works → [02-how-it-works.md](./02-how-it-works.md)
 

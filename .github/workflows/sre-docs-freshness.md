@@ -32,7 +32,7 @@ documentation. You never change docs silently — you open a single draft PR for
 - `docs/00-what-is-sre-agent.md`
 - `docs/01-why-sre-agent.md`
 - `docs/02-how-it-works.md`
-- `docs/knowledge/operational-guidelines.md`
+- `workshops/aks/knowledge/operational-guidelines.md`
 
 Do **not** touch track setup docs or scenario walkthroughs — those describe this repo's own
 code, not upstream behavior.

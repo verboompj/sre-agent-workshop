@@ -17,7 +17,7 @@
 
 ## Guardrails
 
-- The agent never makes silent direct changes → see [`knowledge/operational-guidelines.md`](./knowledge/operational-guidelines.md)
+- The agent never makes silent direct changes → see the AKS track's [`operational-guidelines.md`](../workshops/aks/knowledge/operational-guidelines.md)
 - Per-track approval gates (e.g. VM `invoke-approved-remediation`)
 
 ## Where each track plugs in

@@ -117,7 +117,7 @@ The SRE Agent can ingest runbooks and operational guidelines that shape how it r
 
 1. On the setup page, find the **Knowledge files** card
 2. Click the **+** button to add a knowledge document
-3. Upload the file `docs/knowledge/operational-guidelines.md` from your repository
+3. Upload the file `workshops/aks/knowledge/operational-guidelines.md` from your repository
 4. Wait for the green checkmark
 
 ### What This Does
