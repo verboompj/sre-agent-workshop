@@ -22,3 +22,13 @@ module cosmosRbacRemovalAlert '../../../scenarios/cosmos-rbac-removal/alert.bice
     scopeResourceId: clusterId
   }
 }
+
+module workloadIdentityBreakAlert '../../../scenarios/workload-identity-break/alert.bicep' = {
+  name: 'alert-workload-identity-break'
+  params: {
+    location: location
+    workloadName: workloadName
+    tags: tags
+    scopeResourceId: clusterId
+  }
+}

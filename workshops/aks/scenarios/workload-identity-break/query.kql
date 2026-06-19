@@ -1,0 +1,6 @@
+// Investigation query for Workload Identity Break.
+// The VM investigation tool replaces {{VM_NAME}} with the target VM name.
+AzureDiagnostics
+| where TimeGenerated > ago(1h)
+| where Resource contains "{{VM_NAME}}"
+| take 50

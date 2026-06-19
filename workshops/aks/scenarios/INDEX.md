@@ -5,3 +5,4 @@
 | Scenario | Severity | Est. | Difficulty | Summary |
 | --- | --- | --- | --- | --- |
 | [CosmosDB RBAC Removal](cosmos-rbac-removal/) | 3 | 25m | intermediate | The app's managed-identity CosmosDB role assignment is deleted, so /items returns HTTP 500 while /health stays green. |
+| [Workload Identity Break](workload-identity-break/) | 3 | 30m | advanced | The workload's federated identity credential is deleted, so pods cannot acquire an AAD token and /items returns HTTP 500 with auth errors while /health stays green. |
