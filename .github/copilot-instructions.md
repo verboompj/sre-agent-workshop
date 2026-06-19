@@ -1,89 +1,132 @@
 # Copilot Instructions — SRE Agent Workshop
 
-## Project Overview
+## What this repository is
 
-A hands-on workshop teaching how the **Azure SRE Agent** detects, diagnoses, and remediates infrastructure faults. The pattern in every track: deploy real Azure infrastructure from code → inject a realistic fault → watch the agent investigate → apply a controlled fix. This is teaching material — clarity and a believable failure story matter more than production hardening.
+A hands-on workshop that teaches **Azure SRE Agent** incident response through a
+**multi-track, scenario-based framework**. A *track* is a self-contained workshop variant
+(a different Azure platform); a *scenario* is a self-contained, reproducible fault a learner
+injects, then watches the SRE Agent detect, diagnose, and drive to remediation via a GitHub
+issue → `@copilot` PR → deploy (GitOps).
 
-The repo hosts **two parallel tracks**:
+Two tracks ship today:
 
-- **AKS track** (cloud-native, the original): lives at the **repo root** (`infra/`, `k8s/`, `src/`, `docs/`, `scripts/`). Fault = remove a CosmosDB RBAC role assignment; the agent files a GitHub issue for `@copilot` to fix in Bicep.
-- **VM track** (enterprise migration): self-contained under `workshops/vm/`. Windows Server + IIS, Bastion-first access, approval-gated remediation scripts.
+- **`workshops/aks/`** — AKS + CosmosDB + a Node.js app (the original tutorial).
+- **`workshops/vm/`** — a VM / enterprise-migration track with an approval-gated remediation model.
 
-`workshops/aks/README.md` is only a pointer — AKS assets intentionally stay at the repo root for compatibility. `workshops/README.md` is the track index.
+The framework is meant to be **extended by contributors** — `CONTRIBUTING.md` is the contract.
+When adding or changing anything, prefer the scenario tooling and keep the per-track structure intact.
 
-## Architecture
+## Repository structure
 
-### AKS track
-- **Bicep** (`infra/bicep/main.bicep`): orchestrates modules in order `monitoring → aks → cosmosdb → identity`, then defines **2 alerts inline** in `main.bicep` (not in modules).
-- **App** (`src/app/server.js`): Express, 3 endpoints — `/`, `/health`, `/items`. `/health` **intentionally does not check DB connectivity** (so liveness stays green while `/items` fails). Auth to CosmosDB is via `@azure/identity` `DefaultAzureCredential` + AKS workload identity — there are **no connection strings**.
-- **K8s** (`k8s/`): namespace `workshop`, ServiceAccount `workshop-app`, Deployment + Service both named `web-app` (2 replicas). Pods carry label `azure.workload.identity/use: "true"`.
-
-### VM track (`workshops/vm/`)
-- **Bicep** (`workshops/vm/infra/bicep/main.bicep`): orchestrates `monitoring → network → vm → identity → alerts`. Deploys 2 Windows VMs with IIS, a VNet/NSG, an **Azure Bastion** host (VMs have **no public IPs**), VM Insights, scheduled-query alerts (disk/IIS/CPU), and a constrained Reader/Monitoring-Reader UAMI for investigation tooling.
-- **Scripts** (`workshops/vm/scripts/`): `scenarios/` inject faults, `remediation/` are the only allowed fixes, `validation/` smoke-tests, `access/` opens Bastion tunnels.
-- **Tools** (`workshops/vm/tools/`): `invoke-vm-investigation` produces a visible reasoning chain (`Observe → Investigate → Correlate → Hypothesis → Propose → AwaitApproval → Execute → Validate → Postmortem`); `invoke-approved-remediation` is the approval gate; `invoke-vm-run-command` runs constrained VM commands.
-- Runtime artifacts (traces, postmortems, `actions-audit.log`) are written to `workshops/vm/output/` (gitignored except `.gitkeep`).
-
-## Build & Validation Commands
-
-There is **no unit-test or lint framework**. Validation is Bicep-centric (these are exactly what CI runs):
-
-```bash
-# Validate AKS Bicep (syntax/compile)
-az bicep build --file infra/bicep/main.bicep --stdout > /dev/null
-# Validate VM Bicep
-az bicep build --file workshops/vm/infra/bicep/main.bicep --stdout > /dev/null
+```
+docs/                         # Shared, track-agnostic concept layer (00-what / 01-why / 02-how)
+  knowledge/                  # SRE Agent knowledge files (operational-guidelines.md)
+  0X-*.md                     # Redirect stubs → moved AKS module docs (kept for old links)
+workshops/<track>/
+  README.md                   # Track landing (+ generated scenario table between markers)
+  docs/                       # Module walkthroughs
+  infra/bicep/                # Bicep; main.bicep calls generated modules/scenario-alerts.bicep
+  scenarios/<id>/             # Self-contained fault scenarios (+ generated INDEX.md)
+  ...                         # Track-specific: aks has k8s/, src/app/; vm has tools/
+schemas/scenario.schema.json  # The scenario manifest contract (JSON Schema draft 2020-12)
+scripts/
+  new-scenario.sh             # Scaffold a scenario from the canonical template
+  validate-scenarios.sh       # Validate + (--write) regenerate indexes/aggregators
+  scenario-tools/             # Node ESM tooling behind the wrappers
+.github/workflows/            # Per-track deploy/validate + scenario CI + docs-freshness
 ```
 
-- `infra/bicep/main.json` is a **generated ARM artifact** — edit `.bicep`, never the `.json`.
-- App: Node `>=20`, only `npm start` (`node server.js`); the runnable build is the container image (built in CI, not locally).
-- Pre-flight checks: `bash scripts/setup.sh` (AKS) / `workshops/vm/scripts/setup.sh` (VM). Teardown: `scripts/cleanup.sh`.
+## The scenario framework (read before touching scenarios)
 
-## Workflows — deploy is manual, validate is automatic
+A scenario lives in `workshops/<track>/scenarios/<id>/` and is driven by a `scenario.yaml`
+manifest. Tooling under `scripts/scenario-tools/` (Node ESM; `bin/{validate,generate,new-scenario}.js`,
+`lib/{validate,generate,paths}.js`) validates manifests and **generates** derived artifacts.
+Never hand-edit a generated artifact — change the manifest and regenerate.
 
-The deploy/validate split is the single most important workflow fact:
+- **Scaffold:** `scripts/new-scenario.sh <track> <id> "Title"` (`<track>` ∈ `aks|vm`, `<id>` kebab-case).
+- **Validate / regenerate:** `scripts/validate-scenarios.sh --write` then `scripts/validate-scenarios.sh`
+  (must print `Scenario validation passed`).
+- **Unit tests:** `cd scripts/scenario-tools && npm test` (Node `--test`).
+- **Generated (do not edit by hand):**
+  - `workshops/<track>/infra/bicep/modules/scenario-alerts.bicep` — aggregator that wires every
+    scenario's `alert.bicep`, passing the track's scope resource id.
+  - `workshops/<track>/scenarios/INDEX.md`.
+  - The scenario table in each track `README.md`, between `<!-- BEGIN SCENARIOS -->` / `<!-- END SCENARIOS -->`.
+- **Tracks are a closed set** in `scripts/scenario-tools/lib/paths.js` (`TRACKS`): `aks → scopeParam
+  clusterId`, `vm → scopeParam logAnalyticsResourceId`. Adding a track edits this **and** the schema
+  `track` enum **and** adds a `validate-<track>-infra.yml` workflow (see `CONTRIBUTING.md` → "Add a track").
 
-| Workflow | Trigger | Notes |
-|---|---|---|
-| `deploy-infra.yml` | **`workflow_dispatch` only** | AKS infra. Inputs: `location`, `workloadName`. |
-| `deploy-app.yml` | **`workflow_dispatch` only** | AKS app. Substitutes `${AZURE_CLIENT_ID}`, `${COSMOSDB_ENDPOINT}`, and the `OWNER` image placeholder via `sed`; waits on `deployment/web-app`. |
-| `deploy-vm-infra.yml` | **`workflow_dispatch` only** | VM infra. Needs secret `VM_ADMIN_PASSWORD`. |
-| `validate-infra.yml` | push to `main` + PR on `infra/**` | `az bicep build` + what-if (when creds present). |
-| `validate-vm-infra.yml` | push to `main` + PR on `workshops/vm/infra/**` | `az bicep build` + what-if. |
-| `publish-image.yml` | `workflow_dispatch` + push to `main` on `src/**` | Publishes `ghcr.io/<owner-lowercased>/sre-agent-workshop/app:latest` (+ `:sha`). |
+### Scenario manifest (`scenario.yaml`)
 
-- Deploys **do not auto-trigger on push** — pushing infra changes only runs the `validate-*` what-if; the actual deploy is dispatched manually so participants pick region/workload explicitly.
-- Azure jobs auth with the `AZURE_CREDENTIALS` secret (service-principal JSON). Repo variables `AZURE_LOCATION` / `WORKLOAD_NAME` override the defaults.
-- Note: `docs/knowledge/operational-guidelines.md` still says infra deploys "after merge" — that pre-dates the manual-dispatch split; trust the workflow files.
+Required: `id` (== folder name), `title`, `track` (== parent dir), `summary`, `severity` (0–4),
+`inject`, `validate`, `docPage`. Common optional: `estimatedMinutes`, `difficulty`
+(`beginner|intermediate|advanced`), `learningObjectives`, `signal` (`alertModule`/`alertName`),
+`remediate` (list of `{action, bash, powershell, description}`), `investigation` (`query`).
+The authoritative contract is `schemas/scenario.schema.json`.
 
-## Key Conventions
+### Scenario conventions
 
-### Bicep / Infrastructure
-- Resource names follow `{workloadName}-{type}`. Defaults: AKS `srelab` (`srelab-aks`, `srelab-id`), VM `srelabvm` (`srelabvm-vm01`, RG `rg-srelabvm`).
-- CosmosDB uses the **NoSQL (Core) API** with `@azure/cosmos` — **not** MongoDB. The account name gets a deterministic 4-char `uniqueString(resourceGroup().id)` suffix (e.g. `srelab-cosmos-a1b2`).
-- The CosmosDB role assignment in `identity.bicep` uses **inline `resourceId()` construction** (not an `existing` reference) to avoid ARM caching that silently skips the assignment on re-deploy.
-- Alerts are `Microsoft.Insights/scheduledQueryRules` (**log-based, not metric**). AKS alerts query `KubePodInventory` and `ContainerLog` (v1 schema).
+- **Always ship both shells:** `inject`, `validate`, and every `remediate` action need a `.sh`
+  *and* a `.ps1`. `.sh` scripts must be executable.
+- **`alert.bicep`** must declare exactly `location`, `workloadName`, `tags`, `scopeResourceId`,
+  and bind `scopes: [scopeResourceId]`. If a scenario needs no alert, omit `signal` and delete `alert.bicep`.
+- **`action` naming is track-dependent.** The **VM** approval gate
+  (`workshops/vm/tools/invoke-approved-remediation.sh` / `Invoke-ApprovedRemediation.ps1`) resolves
+  `--action` by globbing `scenarios/*/<action>.sh`, so on the VM track the remediation script basename
+  **must equal** the action and actions are unique per track. The **AKS** track has no such gate and
+  deliberately uses `action: restore-cosmos-rbac` with files `remediate.{sh,ps1}` — do **not** enforce
+  basename==action globally.
+- **Avoid drift:** any manifest change requires re-running `--write`; CI fails if `INDEX.md`, the
+  aggregator, or the README table are stale.
 
-### Fault-injection target (AKS)
-- `infra/bicep/modules/identity.bicep` → the `cosmosRoleAssignment` resource (Cosmos DB Built-in Data Contributor, role id `…000002`) is **the thing Module 5 deletes** to break the app. Restoring it is the fix the agent/`@copilot` produces. Keep it clearly marked.
+## Track specifics
 
-### VM remediation: the approval gate
-- The SRE Agent **never runs remediation directly**. Every fix goes through `invoke-approved-remediation.{sh,ps1}`, which requires a change ticket matching `^(CHG|INC)-[0-9]+$` plus a typed `APPROVE`, maps the action name to `scripts/remediation/<action>.{sh,ps1}`, and appends a JSON line to `output/actions-audit.log`. Allowed actions are an explicit allowlist (`cleanup-disk`, `cleanup-temp`, `start-iis-app-pool`, `stop-cpu-runaway`).
+### AKS (`workshops/aks/`)
 
-### Dual-shell scripting (bash + PowerShell)
-- Every operational script/tool ships **both** a bash `.sh` and a PowerShell `.ps1`. When adding or changing one, update its peer.
-- Script basenames (`scenarios/`, `remediation/`, `access/`, `validation/`) are identical across shells. **Tool** basenames are not: bash is kebab-case (`invoke-approved-remediation.sh`) while PowerShell is PascalCase Verb-Noun (`Invoke-ApprovedRemediation.ps1`).
+- Resource names follow `{workloadName}-{type}` (default `srelab`). CosmosDB uses the **NoSQL (Core)
+  API** with `@azure/cosmos` (NOT MongoDB); endpoint `https://{name}-cosmos-{suffix}.documents.azure.com:443/`.
+- Auth chain: Pod → K8s OIDC → federated credential → UAMI → CosmosDB RBAC. Namespace `workshop`,
+  ServiceAccount `workshop-app` (must match the federated credential in `infra/bicep/modules/identity.bicep`).
+- Alerts are `Microsoft.Insights/scheduledQueryRules` (log-based) over `ContainerLog`/`KubePodInventory`.
+  The shipped `cosmos-rbac-removal` scenario's `inject`/`remediate` remove/recreate the
+  `cosmosRoleAssignment` in `infra/bicep/modules/identity.bicep` (built with inline `resourceId()` to
+  avoid ARM caching); its http-500 alert is generated into the aggregator.
+- App: `src/app/server.js` (Express; `/`, `/health`, `/items`; `DefaultAzureCredential`). Image at
+  `ghcr.io/<owner>/sre-agent-workshop/app:latest`; the `OWNER` placeholder in `k8s/deployment.yaml`
+  is substituted by the publish workflow.
 
-### Break-and-fix loop (AKS)
-1. Remove `cosmosRoleAssignment` from `identity.bicep` (and delete it live), restart pods.
-2. `/items` returns HTTP 500 with RBAC/Forbidden errors; `/health` stays green.
-3. The `http-500-errors` scheduled-query alert fires (matches `ContainerLog` for `RBAC`, `Forbidden`, `Failed to read items from CosmosDB`, `StatusCode: 500`).
-4. SRE Agent investigates → opens a GitHub issue assigned to `@copilot`.
-5. `@copilot` restores the Bicep role assignment and opens a PR.
-6. Merge → dispatch **Deploy Infrastructure** → role restored → app recovers.
+### VM (`workshops/vm/`)
 
-## SRE Agent operational guidelines
-`docs/knowledge/operational-guidelines.md` is uploaded to the SRE Agent as a knowledge file. Core rule: **never make direct Azure changes** (no `az`/portal edits) — always create a GitHub issue for `@copilot` to fix in Bicep, preserving incident → issue → PR → deploy traceability.
+- Remediation is **approval-gated**: `tools/invoke-approved-remediation.sh` (PowerShell:
+  `Invoke-ApprovedRemediation.ps1`) maps an action to a scenario-owned script, requires a `CHG`/`INC`
+  ticket plus an explicit `APPROVE`, and writes an audit entry. The SRE Agent never runs remediation directly.
 
-## Repo tooling: the `.squad/` system (not workshop content)
-`.squad/`, `.github/agents/squad.agent.md`, `.copilot/skills/`, and all `.github/workflows/squad-*.yml` + `sync-squad-labels.yml` belong to **"Squad"**, a multi-agent orchestration framework used to *develop* this workshop. It is **not** part of the workshop deliverable — don't confuse the `squad-*` workflows with the deploy/validate workflows above. `.squad/log/`, `sessions/`, `orchestration-log/`, and `decisions/inbox/` are gitignored runtime state; some append-only state files use `merge=union` (see `.gitattributes`).
+## Workflows (`.github/workflows/`, shared across tracks)
+
+- **AKS:** `deploy-aks-infra.yml` (**manual `workflow_dispatch` only** — region/workload chosen at
+  deploy time), `deploy-aks-app.yml` (manual dispatch), `publish-aks-image.yml` (push on
+  `workshops/aks/src/**`; GHCR, lowercased owner), `validate-aks-infra.yml` (push/PR on
+  `workshops/aks/infra/**`; syntax + what-if).
+- **VM:** `deploy-vm-infra.yml`, `validate-vm-infra.yml`.
+- **Framework:** `validate-scenarios.yml` — schema check, unit tests, drift check, and `az bicep build`
+  on every `alert.bicep` + aggregator.
+- **Docs freshness:** `sre-docs-freshness.md` is the gh-aw **source**; `sre-docs-freshness.lock.yml`
+  (and `.github/aw/actions-lock.json`) are generated — edit the `.md` and recompile with `gh aw compile`.
+- Deploy is intentionally **manual**; validation runs on push/PR. In the Actions tab, display names are
+  track-qualified (e.g. **Deploy AKS Infrastructure** vs **Deploy VM Infrastructure**) — refer to them by
+  those names in docs. AKS deploy/validate workflows authenticate with the `AZURE_CREDENTIALS` secret;
+  `publish-aks-image.yml` uses `GITHUB_TOKEN`/GHCR.
+
+## Docs & the SRE Agent
+
+- **Concept layer:** `docs/00-what-is-sre-agent.md`, `01-why-sre-agent.md`, `02-how-it-works.md`
+  (track-agnostic).
+- **Operational guidelines:** `docs/knowledge/operational-guidelines.md` is uploaded to the SRE Agent
+  as a knowledge file. It mandates **no direct Azure changes** — every fix goes through a GitHub issue
+  assigned to `@copilot`, which opens a PR; an operator then **manually** triggers the track's deploy
+  workflow. Keep this file consistent with the actual (manual-deploy) model.
+
+## Contributing
+
+`CONTRIBUTING.md` is the contract: the 6-step scenario flow, what CI enforces, and the add-a-track
+procedure. Follow it (and the tooling) rather than wiring scenarios in by hand.

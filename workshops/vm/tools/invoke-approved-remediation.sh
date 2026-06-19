@@ -20,18 +20,34 @@ while [ $# -gt 0 ]; do
     -n|--vm-name) VM_NAME="$2"; shift 2 ;;
     -t|--change-ticket) CHANGE_TICKET="$2"; shift 2 ;;
     -h|--help)
-      echo "Usage: $0 --action {cleanup-disk|cleanup-temp|start-iis-app-pool|stop-cpu-runaway} --change-ticket <CHG-12345> [--resource-group <rg>] [--vm-name <vm>]"
+      echo "Usage: $0 --action <name>  (any remediation action defined by a scenario) --change-ticket <CHG-12345> [--resource-group <rg>] [--vm-name <vm>]"
       exit 0
       ;;
     *) echo "Unknown argument: $1" >&2; exit 2 ;;
   esac
 done
 
-case "$ACTION" in
-  cleanup-disk|cleanup-temp|start-iis-app-pool|stop-cpu-runaway) ;;
-  "") echo "Action is required." >&2; exit 2 ;;
-  *) echo "Action must be one of: cleanup-disk, cleanup-temp, start-iis-app-pool, stop-cpu-runaway." >&2; exit 2 ;;
-esac
+if [ -z "$ACTION" ]; then
+  echo "Action is required." >&2
+  exit 2
+fi
+
+# Resolve the action to a remediation script owned by a scenario. The scenario
+# manifests (validated in CI) are the single source of truth for allowed actions.
+# nullglob keeps the array empty (rather than a literal pattern) when nothing matches;
+# this is portable to bash 3.2 (macOS) unlike `mapfile`.
+shopt -s nullglob
+MATCHES=("$SCRIPT_DIR"/../scenarios/*/"${ACTION}.sh")
+shopt -u nullglob
+if [ "${#MATCHES[@]}" -eq 0 ]; then
+  echo "Unknown action '$ACTION': no scenarios/*/${ACTION}.sh found." >&2
+  exit 1
+fi
+if [ "${#MATCHES[@]}" -gt 1 ]; then
+  echo "Ambiguous action '$ACTION' matches multiple scenarios; action names must be unique." >&2
+  exit 1
+fi
+SCRIPT_PATH="${MATCHES[0]}"
 
 if [ -z "$CHANGE_TICKET" ]; then
   echo "ChangeTicket is required." >&2
@@ -43,7 +59,6 @@ if [[ ! "$CHANGE_TICKET" =~ ^(CHG|INC)-[0-9]+$ ]]; then
   exit 1
 fi
 
-SCRIPT_PATH="$SCRIPT_DIR/../scripts/remediation/${ACTION}.sh"
 if [ ! -f "$SCRIPT_PATH" ]; then
   echo "Approved action script missing: $SCRIPT_PATH" >&2
   exit 1

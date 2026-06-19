@@ -4,7 +4,7 @@
 # entry per execution. The SRE Agent never runs remediation directly —
 # every action passes through this gate.
 param(
-    [Parameter(Mandatory = $true)][ValidateSet("cleanup-disk", "cleanup-temp", "start-iis-app-pool", "stop-cpu-runaway")][string]$Action,
+    [Parameter(Mandatory = $true)][string]$Action,
     [string]$ResourceGroup = "rg-srelabvm",
     [string]$VmName = "srelabvm-vm01",
     [Parameter(Mandatory = $true)][string]$ChangeTicket
@@ -14,14 +14,14 @@ if ($ChangeTicket -notmatch '^(CHG|INC)-[0-9]+$') {
     throw "ChangeTicket must match CHG-12345 or INC-12345."
 }
 
-$actionMap = @{
-    "cleanup-disk" = "$PSScriptRoot\..\scripts\remediation\cleanup-disk.ps1"
-    "cleanup-temp" = "$PSScriptRoot\..\scripts\remediation\cleanup-temp.ps1"
-    "start-iis-app-pool" = "$PSScriptRoot\..\scripts\remediation\start-iis-app-pool.ps1"
-    "stop-cpu-runaway" = "$PSScriptRoot\..\scripts\remediation\stop-cpu-runaway.ps1"
+$matches = @(Get-ChildItem -Path (Join-Path $PSScriptRoot "..\scenarios\*\$Action.ps1") -ErrorAction SilentlyContinue)
+if ($matches.Count -eq 0) {
+    throw "Unknown action '$Action': no scenarios\*\$Action.ps1 found."
 }
-
-$scriptPath = $actionMap[$Action]
+if ($matches.Count -gt 1) {
+    throw "Ambiguous action '$Action' matches multiple scenarios; action names must be unique."
+}
+$scriptPath = $matches[0].FullName
 if (-not (Test-Path $scriptPath)) {
     throw "Approved action script missing: $scriptPath"
 }

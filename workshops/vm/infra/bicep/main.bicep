@@ -87,13 +87,12 @@ module identity 'modules/identity.bicep' = {
 // ──────────────────────────────────────────────
 // 5. Scheduled query alerts (disk pressure, IIS, CPU)
 // ──────────────────────────────────────────────
-module alerts 'modules/alerts.bicep' = {
+module alerts 'modules/scenario-alerts.bicep' = {
   name: 'alerts'
   params: {
     location: location
     workloadName: workloadName
     tags: tags
-    logAnalyticsWorkspaceId: monitoring.outputs.logAnalyticsWorkspaceId
     logAnalyticsResourceId: monitoring.outputs.logAnalyticsId
   }
 }

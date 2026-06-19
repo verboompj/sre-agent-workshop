@@ -3,3 +3,6 @@
 .squad/agents/*/history.md merge=union
 .squad/log/** merge=union
 .squad/orchestration-log/** merge=union
+
+# gh-aw: compiled agentic workflow lock files are generated artifacts
+.github/workflows/*.lock.yml linguist-generated=true merge=ours

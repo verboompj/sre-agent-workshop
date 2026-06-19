@@ -6,87 +6,33 @@ A hands-on workshop that teaches operations teams how the Azure SRE Agent detect
 
 ---
 
-## 🎯 What You'll Learn
+## Start here
 
-- **Deploy AKS infrastructure** using Bicep Infrastructure-as-Code and GitHub Actions
-- **Deploy a web application** to AKS with Azure workload identity authentication
-- **Onboard and configure** the Azure SRE Agent with your GitHub repo and Azure resources
-- **Introduce a realistic fault** (removed role assignment) that breaks application access to CosmosDB
-- **Watch the SRE Agent** detect the failure, trace it through logs/commits, and open a PR to fix it
-- **Run VM migration scenarios** on Windows Server + IIS with approval-gated remediation workflows
+New to the Azure SRE Agent? Read the shared concept layer first:
 
-By the end of the workshop, you'll understand how modern AI-assisted incident response accelerates MTTR and improves reliability at scale.
+1. [What is the SRE Agent?](docs/00-what-is-sre-agent.md)
+2. [Why use it?](docs/01-why-sre-agent.md)
+3. [How it works](docs/02-how-it-works.md)
 
----
+## Choose a track
 
-## 🏗️ Architecture
+| Track | Focus | Start |
+| --- | --- | --- |
+| **AKS / Cloud-Native** | Kubernetes workload identity, CosmosDB RBAC fault injection | [workshops/aks/](workshops/aks/README.md) |
+| **VM / Enterprise Migration** | Windows Server + IIS, Bastion access, approval-gated remediation | [workshops/vm/](workshops/vm/README.md) |
 
-The workshop deploys a complete infrastructure environment and simulates a real incident:
+Each track follows the same loop: **deploy from code → inject a realistic fault →
+watch the agent investigate → apply controlled remediation → capture a postmortem.**
 
-```
-GitHub Repo (Your Fork)
-  ├─ Bicep Code ──[GitHub Actions]──> Azure Resources
-  │                                      ├─ AKS Cluster (2 nodes, workload identity enabled)
-  │                                      ├─ CosmosDB (serverless, NoSQL API)
-  │                                      ├─ Log Analytics + Application Insights
-  │                                      └─ User-Assigned Managed Identity + RBAC
-  │
-  ├─ Kubernetes Manifests ──> App Pods in AKS
-  │                              └─ Node.js Web App
-  │                                   └─ Uses DefaultAzureCredential + Workload Identity
-  │                                       └─ Accesses CosmosDB via RBAC Role
-  │
-  └─ SRE Agent (sre.azure.com)
-       ├─ Connects: GitHub Repo + Azure Resources
-       ├─ Monitors: Azure Monitor Alert
-       ├─ Traces: Deployment → Commit → Code
-       └─ Acts: Diagnoses → Opens PR with Fix
-```
+## Scenarios at a glance
 
-### Authentication Flow
+- AKS scenarios: [workshops/aks/scenarios/INDEX.md](workshops/aks/scenarios/INDEX.md)
+- VM scenarios: [workshops/vm/scenarios/INDEX.md](workshops/vm/scenarios/INDEX.md)
 
-The app authenticates to CosmosDB via **Workload Identity**:
+## Contributing a scenario
 
-```
-1. Pod requests token from OIDC provider
-   └─> K8s ServiceAccount (with annotation)
-2. OIDC issues token for managed identity
-   └─> User-Assigned Managed Identity
-3. Token authenticated against CosmosDB
-   └─> Role Assignment grants data-plane access
-4. App reads data successfully
-   └─> DefaultAzureCredential handles all of this
-```
-
-When the role assignment is removed, step 3 fails → app returns 500 → SRE Agent responds.
-
----
-
-## 🧭 Workshop Tracks
-
-This repository now supports two aligned workshop tracks:
-
-| Track | Focus | Entry Point |
-|--------|----------|-----------|
-| **AKS / Cloud-Native** | Kubernetes workload identity, CosmosDB RBAC fault injection | This README + [`docs/`](docs/) |
-| **VM / Enterprise Migration** | Windows Server, IIS, Bastion-first access, VM observability, approval-gated remediation | [`workshops/vm/README.md`](workshops/vm/README.md) |
-
----
-
-## 📋 AKS Workshop Modules
-
-Each module takes 20–30 minutes and builds on the previous one. **Total workshop time: ~3–4 hours**.
-
-| Module | Duration | What You Do |
-|--------|----------|-----------|
-| **[0. Prerequisites](docs/00-prerequisites.md)** | Pre-work | Set up Azure subscription, tools, GitHub fork, and secrets |
-| **[1. Deploy Infrastructure](docs/01-deploy-infrastructure.md)** | ~30 min | Provision AKS, CosmosDB, monitoring, and managed identity via Bicep |
-| **[2. Deploy Application](docs/02-deploy-application.md)** | ~30 min | Deploy the web app to AKS with workload identity |
-| **[3. Onboard SRE Agent](docs/03-onboard-sre-agent.md)** | ~30 min | Create SRE Agent, connect GitHub repo, grant Azure access |
-| **[4. Configure Incident Response](docs/04-configure-incident-response.md)** | ~20 min | Connect Azure Monitor alerts and set autonomy level |
-| **[5. Break It](docs/05-break-it.md)** | ~20 min | Intentionally remove a role assignment—introduce the fault |
-| **[6. Watch SRE Agent](docs/06-watch-sre-agent.md)** | ~30 min | Observe SRE Agent investigate and open a fix PR |
-| **[7. Cleanup](docs/07-cleanup.md)** | ~10 min | Delete all resources and wrap up |
+This repo is built to grow. See [CONTRIBUTING.md](CONTRIBUTING.md) to add a new scenario
+(one self-contained folder) or a whole new track.
 
 ---
 
@@ -102,7 +48,7 @@ This workshop runs on Azure resources that incur real costs. The following estim
 | SRE Agent | ~$0.50 | Depends on model provider and investigation volume |
 | **Total** | **~$1.00/hr** | ~$4–6 for full workshop |
 
-**Budget recommendation: Set aside $10 to be safe.** Remember to run **Module 7 (Cleanup)** when done—resources still incur costs when left running.
+**Budget recommendation: Set aside $10 to be safe.** Remember to run the **Cleanup** module when done—resources still incur costs when left running.
 
 ---
 
@@ -125,11 +71,11 @@ This workshop runs on Azure resources that incur real costs. The following estim
 git clone https://github.com/YOUR_USERNAME/sre-agent-workshop.git
 cd sre-agent-workshop
 
-# 3. Verify setup (optional)
-./scripts/setup.sh
+# 3. Read the shared concept layer, then pick a track
+cat docs/00-what-is-sre-agent.md
 
-# 4. Start with Module 0
-cat docs/00-prerequisites.md
+# 4. Follow your track's walkthrough
+cat workshops/aks/README.md   # or: cat workshops/vm/README.md
 ```
 
 Then follow each module in order. Each one builds on the previous.
@@ -140,51 +86,30 @@ Then follow each module in order. Each one builds on the previous.
 
 ```
 sre-agent-workshop/
-├── README.md                              # You are here
+├── README.md                     # This portfolio landing
+├── CONTRIBUTING.md               # How to add scenarios and tracks
+├── docs/                         # Shared, track-agnostic concept layer
+│   ├── 00-what-is-sre-agent.md
+│   ├── 01-why-sre-agent.md
+│   ├── 02-how-it-works.md
+│   └── knowledge/                # SRE Agent knowledge files (operational guidelines)
 ├── workshops/
-│   ├── aks/                               # AKS track entry (compatibility-first)
-│   └── vm/                                # VM track (infra, scripts, docs, tooling)
-├── docs/
-│   ├── 00-prerequisites.md                # Module 0: Setup & pre-work
-│   ├── 01-deploy-infrastructure.md        # Module 1: Provision Azure
-│   ├── 02-deploy-application.md           # Module 2: Deploy app
-│   ├── 03-onboard-sre-agent.md            # Module 3: Create SRE Agent
-│   ├── 04-configure-incident-response.md  # Module 4: Alert response
-│   ├── 05-break-it.md                     # Module 5: Introduce fault
-│   ├── 06-watch-sre-agent.md              # Module 6: Observe remediation
-│   └── 07-cleanup.md                      # Module 7: Clean up
-│
-├── infra/bicep/
-│   ├── main.bicep                         # Bicep orchestrator template
-│   ├── main.bicepparam                    # Default parameters
-│   └── modules/
-│       ├── aks.bicep                      # AKS cluster definition
-│       ├── cosmosdb.bicep                 # CosmosDB account + database
-│       ├── monitoring.bicep               # Log Analytics + App Insights
-│       └── identity.bicep                 # Managed identity + role assignments
-│
-├── src/app/
-│   ├── Dockerfile                         # Container image definition
-│   ├── package.json                       # Node.js dependencies
-│   ├── server.js                          # Express app with 3 endpoints
-│   └── package-lock.json
-│
-├── k8s/
-│   ├── namespace.yaml                     # Kubernetes namespace
-│   ├── service-account.yaml               # ServiceAccount for workload identity
-│   ├── deployment.yaml                    # App deployment
-│   └── service.yaml                       # LoadBalancer service
-│
-├── .github/workflows/
-│   ├── publish-image.yml                  # Build & publish container to ghcr.io
-│   ├── deploy-infra.yml                   # Deploy Bicep to Azure
-│   ├── deploy-vm-infra.yml                # Deploy VM workshop infra
-│   ├── deploy-app.yml                     # Deploy K8s manifests
-│   └── validate-vm-infra.yml              # Validate VM workshop Bicep
-│
-└── scripts/
-    ├── setup.sh                           # Pre-workshop validation
-    └── cleanup.sh                         # Resource deletion helper
+│   ├── aks/                      # AKS / Cloud-Native track
+│   │   ├── README.md
+│   │   ├── docs/                 # Module walkthroughs (00-04, 90, 99)
+│   │   ├── infra/bicep/          # Bicep modules + generated scenario-alerts
+│   │   ├── k8s/                  # Kubernetes manifests
+│   │   ├── src/app/              # Node.js web app
+│   │   ├── scripts/              # setup / cleanup helpers
+│   │   └── scenarios/            # Self-contained fault scenarios (+ INDEX.md)
+│   └── vm/                       # VM / Enterprise Migration track (same shape)
+├── schemas/
+│   └── scenario.schema.json      # The scenario manifest contract
+├── scripts/
+│   ├── new-scenario.sh           # Scaffold a new scenario
+│   ├── validate-scenarios.sh     # Validate + regenerate indexes/aggregators
+│   └── scenario-tools/           # Node tooling behind the wrappers
+└── .github/workflows/            # Per-track deploy/validate + scenario CI
 ```
 
 ---
@@ -202,7 +127,7 @@ The Azure SRE Agent is available in **East US 2**, **Sweden Central**, and **Aus
 The AKS cluster must be public (not private). The SRE Agent needs network access to query cluster logs and metrics.
 
 ### Cleanup is Critical
-Resources like AKS and CosmosDB incur hourly costs even if idle. **Always run Module 7 (Cleanup)** to delete resources when done. A forgotten cluster can cost $20–30 overnight.
+Resources like AKS and CosmosDB incur hourly costs even if idle. **Always run the Cleanup module** to delete resources when done. A forgotten cluster can cost $20–30 overnight.
 
 ### Production Use
 This workshop is designed for learning. Do not use these patterns (especially Autonomous autonomy level) in production without additional controls, approval gates, and testing.
@@ -235,4 +160,4 @@ MIT License. See [LICENSE](LICENSE) for details.
 
 ---
 
-**Ready to begin?** Start with [Module 0: Prerequisites](docs/00-prerequisites.md) →
+**Ready to begin?** Start with [What is the SRE Agent?](docs/00-what-is-sre-agent.md) →
