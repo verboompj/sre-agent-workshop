@@ -34,7 +34,7 @@ resource authErrorsAlert 'Microsoft.Insights/scheduledQueryRules@2023-03-15-prev
             | distinct ContainerID;
             ContainerLog
             | where ContainerID in (workshopContainers)
-            | where LogEntry has "AADSTS70021" or LogEntry has "No matching federated identity" or LogEntry has "ManagedIdentityCredential" or LogEntry has "AADSTS"
+            | where LogEntry has "AADSTS70021" or LogEntry has "No matching federated identity" or LogEntry has "ManagedIdentityCredential" or LogEntry contains "AADSTS"
             | summarize ErrorCount = count() by bin(TimeGenerated, 5m)
           '''
           timeAggregation: 'Count'
