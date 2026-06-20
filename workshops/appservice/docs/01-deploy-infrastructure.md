@@ -8,7 +8,7 @@ After this module completes, you'll have a fully-functional App Service and back
 
 ## What Gets Deployed
 
-The workflow deploys the following Azure resources to your subscription. All resource names are prefixed with your `workloadName` (default: `srelab`):
+The workflow deploys the following Azure resources to your subscription. All resource names are prefixed with your `workloadName` (default: `srelabapp`):
 
 | Resource | Name Pattern | Purpose |
 |----------|--------------|---------|
@@ -88,7 +88,7 @@ Go to your fork of the workshop repository on GitHub:
      - `australiaeast` (recommended for Asia-Pacific)
    
    - **workloadName** (text input)  
-     Defaults to `srelab`. You can customize this if desired (e.g., `srelab-team1`). This name is used in all resource naming. **Keep this name handy — you'll need it in future modules.** Use lowercase alphanumeric only, no special characters.
+     Defaults to `srelabapp`. You can customize this if desired (e.g., `srelabapp-team1`). This name is used in all resource naming. **Keep this name handy — you'll need it in future modules.** Use lowercase alphanumeric only, no special characters.
 
 3. Click **Run workflow**
 
@@ -115,11 +115,11 @@ The workflow performs these steps:
 ============================================
   Infrastructure Deployment Complete
 ============================================
-Resource Group:  rg-srelab
+Resource Group:  rg-srelabapp
 Location:        eastus2
-Web App:         srelab-web-xxxx
-Web App URL:     https://srelab-web-xxxx.azurewebsites.net
-SQL Server:      srelab-sql-xxxx
+Web App:         srelabapp-web-xxxx
+Web App URL:     https://srelabapp-web-xxxx.azurewebsites.net
+SQL Server:      srelabapp-sql-xxxx
 ============================================
 ```
 
@@ -143,10 +143,10 @@ Deploy infrastructure directly from your machine using the Azure CLI. This is us
 
 #### Step 1: Set Environment Variables
 
-Replace `srelab` and `eastus2` with your desired workload name and location:
+Replace `srelabapp` and `eastus2` with your desired workload name and location:
 
 ```bash
-export WORKLOAD_NAME="srelab"
+export WORKLOAD_NAME="srelabapp"
 export LOCATION="eastus2"
 ```
 
@@ -156,7 +156,7 @@ export LOCATION="eastus2"
 - `australiaeast` (recommended for Asia-Pacific)
 
 **Workload name guidelines:**
-- Lowercase alphanumeric only (e.g., `srelab`, `srelab-team1`, `mysre123`)
+- Lowercase alphanumeric only (e.g., `srelabapp`, `srelabapp-team1`, `mysre123`)
 - Keep it short — it's used in all resource names
 - Remember this name for future modules
 
@@ -172,9 +172,9 @@ az group create \
 **Expected output:**
 ```json
 {
-  "id": "/subscriptions/.../resourceGroups/rg-srelab",
+  "id": "/subscriptions/.../resourceGroups/rg-srelabapp",
   "location": "eastus2",
-  "name": "rg-srelab",
+  "name": "rg-srelabapp",
   "properties": {
     "provisioningState": "Succeeded"
   }
@@ -247,10 +247,10 @@ az login
 
 ### 2. List All Resources
 
-Replace `srelab` with your `workloadName` if you customized it:
+Replace `srelabapp` with your `workloadName` if you customized it:
 
 ```bash
-az resource list --resource-group rg-srelab -o table
+az resource list --resource-group rg-srelabapp -o table
 ```
 
 Expected output: ~8–10 resources including the web app, App Service Plan, SQL server, SQL database, Log Analytics workspace, Application Insights, and managed identity.
@@ -259,8 +259,8 @@ Expected output: ~8–10 resources including the web app, App Service Plan, SQL 
 
 ```bash
 az webapp show \
-  --resource-group rg-srelab \
-  --name $(az webapp list --resource-group rg-srelab --query "[0].name" -o tsv) \
+  --resource-group rg-srelabapp \
+  --name $(az webapp list --resource-group rg-srelabapp --query "[0].name" -o tsv) \
   --query "{name:name, state:state, hostName:defaultHostName}" \
   -o table
 ```
@@ -269,15 +269,15 @@ Expected output:
 ```
 Name               State    HostName
 ─────────────────  ───────  ─────────────────────────────────────
-srelab-web-xxxx    Running  srelab-web-xxxx.azurewebsites.net
+srelabapp-web-xxxx    Running  srelabapp-web-xxxx.azurewebsites.net
 ```
 
 ### 4. Verify the SQL Server
 
 ```bash
 az sql server show \
-  --resource-group rg-srelab \
-  --name $(az sql server list --resource-group rg-srelab --query "[0].name" -o tsv) \
+  --resource-group rg-srelabapp \
+  --name $(az sql server list --resource-group rg-srelabapp --query "[0].name" -o tsv) \
   --query "{name:name, fqdn:fullyQualifiedDomainName, state:state}" \
   -o table
 ```
@@ -286,15 +286,15 @@ Expected output:
 ```
 Name               Fqdn                                        State
 ─────────────────  ──────────────────────────────────────────  ──────────
-srelab-sql-xxxx    srelab-sql-xxxx.database.windows.net        Ready
+srelabapp-sql-xxxx    srelabapp-sql-xxxx.database.windows.net        Ready
 ```
 
 ### 5. Verify the Managed Identity
 
 ```bash
 az identity show \
-  --resource-group rg-srelab \
-  --name srelab-id \
+  --resource-group rg-srelabapp \
+  --name srelabapp-id \
   --query "{name:name, clientId:clientId}" \
   -o table
 ```
@@ -303,7 +303,7 @@ Expected output:
 ```
 Name       ClientId
 ─────────  ──────────────────────────────────────────
-srelab-id  xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+srelabapp-id  xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
 ```
 
 ## Understanding the Architecture
@@ -318,9 +318,9 @@ Here's how the app will authenticate to Azure SQL in Module 2:
 ┌─────────────────────────────────────────────────────────────┐
 │ App Service Web App                                         │
 │                                                             │
-│  App uses: DefaultAzureCredential from Azure.Identity      │
+│  App uses: Microsoft.Data.SqlClient (AD Managed Identity)  │
 │  ↓                                                          │
-│  Queries: AZURE_CLIENT_ID env var (UAMI client ID)        │
+│  Reads: AZURE_SQL_CONNECTIONSTRING (User Id=<clientId>)   │
 │  ↓                                                          │
 │  Requests: AAD token for Azure SQL audience               │
 └─────────────────────────────────────────────────────────────┘
@@ -348,7 +348,7 @@ Here's how the app will authenticate to Azure SQL in Module 2:
 
 **Key components:**
 - **User-Assigned Managed Identity (UAMI):** An Azure identity assigned to the web app — no passwords or certificates
-- **Contained Database User:** A SQL user inside `srelab-db` mapped to the UAMI and granted `db_datareader`
+- **Contained Database User:** A SQL user inside `srelabapp-db` mapped to the UAMI and granted `db_datareader`
 - **AAD-Only Authentication:** The SQL server is configured for Azure AD authentication only — no SQL passwords
 
 This chain is the foundation of what we'll break in **Module 5**. When we remove the managed-identity SQL grant in Module 5, the app will still be able to get an AAD token, but Azure SQL will reject the request — the contained user or its permissions will be absent.
@@ -405,7 +405,7 @@ These regions are tested and supported by the workshop. Retry the workflow with 
 
 At this point, you should have:
 
-✅ All Azure resources created in `rg-srelab`  
+✅ All Azure resources created in `rg-srelabapp`  
 ✅ App Service Plan and web app in `Running` state  
 ✅ Azure SQL server (`Succeeded`) and database created  
 ✅ Managed identity created and assigned to the web app  
@@ -415,12 +415,12 @@ Run this quick verification:
 
 ```bash
 # List resources
-az resource list --resource-group rg-srelab --query "[].type" -o table | wc -l
+az resource list --resource-group rg-srelabapp --query "[].type" -o table | wc -l
 # Should show: ~8–10
 
 # Check web app state
-az webapp show --resource-group rg-srelab \
-  --name $(az webapp list --resource-group rg-srelab --query "[0].name" -o tsv) \
+az webapp show --resource-group rg-srelabapp \
+  --name $(az webapp list --resource-group rg-srelabapp --query "[0].name" -o tsv) \
   --query "state" -o tsv
 # Should show: Running
 ```

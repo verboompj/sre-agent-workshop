@@ -13,13 +13,13 @@ All your workshop resources (App Service, Azure SQL, Log Analytics, Application 
 ### Get Your Resource Group Name
 
 When you deployed infrastructure (Module 1), you specified a resource group name. It's likely one of:
-- `rg-srelab` (if you used the default)
+- `rg-srelabapp` (if you used the default)
 - Check the Azure Portal: navigate to **Resource Groups** and look for the one you created
 
 ### Delete the Resource Group
 
 ```bash
-az group delete --name rg-srelab --yes --no-wait
+az group delete --name rg-srelabapp --yes --no-wait
 ```
 
 **What this does:**
@@ -30,7 +30,7 @@ This single command removes everything: the App Service Plan, the web app, the A
 
 **To monitor deletion:**
 ```bash
-az group show --name rg-srelab
+az group show --name rg-srelabapp
 ```
 
 This command will return an error once the resource group is deleted (which is the expected outcome).
@@ -102,7 +102,7 @@ If you won't use the workshop repository anymore, you can delete your fork:
 ### Check That Azure Resources Are Deleted
 
 ```bash
-az group show --name rg-srelab 2>/dev/null || echo "✓ Resource group deleted"
+az group show --name rg-srelabapp 2>/dev/null || echo "✓ Resource group deleted"
 ```
 
 If the resource group is deleted, this returns "✓ Resource group deleted". If it still exists, you'll see the resource group details.
@@ -115,8 +115,8 @@ az ad sp show --id {APP_ID} 2>/dev/null || echo "✓ Service principal deleted"
 
 ## Final Checklist
 
-- [ ] Azure resource group deleted (`az group delete --name rg-srelab --yes --no-wait`)
-- [ ] Verified deletion: `az group show --name rg-srelab` returns an error
+- [ ] Azure resource group deleted (`az group delete --name rg-srelabapp --yes --no-wait`)
+- [ ] Verified deletion: `az group show --name rg-srelabapp` returns an error
 - [ ] Service principal deleted (optional): `az ad sp delete --id {APP_ID}`
 - [ ] GitHub Actions secrets removed from your fork (optional but recommended)
 - [ ] Service principal app removed from your Azure AD (optional)

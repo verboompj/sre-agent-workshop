@@ -17,7 +17,7 @@ on:
       workloadName:
         description: 'Workload name (used in resource naming)'
         type: string
-        default: srelab
+        default: srelabapp
 
 permissions:
   id-token: write
@@ -28,7 +28,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       LOCATION: ${{ inputs.location || vars.AZURE_LOCATION || 'eastus2' }}
-      WORKLOAD: ${{ inputs.workloadName || vars.WORKLOAD_NAME || 'srelab' }}
+      WORKLOAD: ${{ inputs.workloadName || vars.WORKLOAD_NAME || 'srelabapp' }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -42,8 +42,11 @@ jobs:
         id: principal
         run: |
           # The AZURE_CREDENTIALS service principal becomes the SQL AAD admin.
-          CLIENT_ID=$(echo '${{ secrets.AZURE_CREDENTIALS }}' | jq -r '.clientId')
-          ADMIN_OID=$(az ad sp show --id "$CLIENT_ID" --query id -o tsv)
+          # Derive its object id from the access token's `oid` claim so we do NOT
+          # depend on Microsoft Graph / Directory Reader permissions (the workshop
+          # service principal is typically Contributor-only and cannot call `az ad sp show`).
+          ADMIN_OID=$(az account get-access-token --resource https://management.azure.com/ --query accessToken -o tsv \
+            | python3 -c "import sys,json,base64; p=sys.stdin.read().strip().split('.')[1]; p+='='*(-len(p)%4); print(json.loads(base64.urlsafe_b64decode(p))['oid'])")
           echo "admin_oid=$ADMIN_OID" >> "$GITHUB_OUTPUT"
 
       - name: Create resource group

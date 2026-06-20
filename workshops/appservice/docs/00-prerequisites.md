@@ -168,10 +168,10 @@ Repository variables provide default values for your workflows and the validatio
 
 | Variable Name | Value | Description |
 |---------------|-------|-------------|
-| `WORKLOAD_NAME` | Your chosen workload name (e.g., `srelab`) | Used in resource naming — should match what you used in Module 1 |
+| `WORKLOAD_NAME` | Your chosen workload name (e.g., `srelabapp`) | Used in resource naming — should match what you used in Module 1 |
 | `AZURE_LOCATION` | Your chosen Azure region (e.g., `eastus2`) | Should match the region used in Module 1 |
 
-> **Why this matters:** The `Validate App Service Infrastructure` workflow runs automatically when you push Bicep changes or open a PR. It validates Bicep syntax and shows a what-if preview of what the deployment would change. Without these variables, the what-if preview targets the default `srelab` / `eastus2`, which may not match your actual deployment.
+> **Why this matters:** The `Validate App Service Infrastructure` workflow runs automatically when you push Bicep changes or open a PR. It validates Bicep syntax and shows a what-if preview of what the deployment would change. Without these variables, the what-if preview targets the default `srelabapp` / `eastus2`, which may not match your actual deployment.
 
 ## Step 5: Verify Your Setup
 

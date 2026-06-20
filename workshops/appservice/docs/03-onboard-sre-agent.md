@@ -29,13 +29,13 @@ Navigate to the Azure SRE Agent portal and step through the creation wizard:
 The wizard will ask for the following:
 
 - **Subscription:** Select the Azure subscription where you deployed the workshop infrastructure (from Module 1)
-- **Resource group:** Choose `rg-srelab` (the same resource group you created for your App Service, Azure SQL, and monitoring)
-- **Agent name:** Enter something memorable, like `srelab-agent` or `workshop-agent` — this name appears in the portal and in incident conversations
+- **Resource group:** Choose `rg-srelabapp` (the same resource group you created for your App Service, Azure SQL, and monitoring)
+- **Agent name:** Enter something memorable, like `srelabapp-agent` or `workshop-agent` — this name appears in the portal and in incident conversations
 - **Region:** Select the same region as your infrastructure (East US 2, Sweden Central, or Australia East)
 - **Model provider:** Choose **Anthropic** (recommended for this workshop) or Azure OpenAI if you prefer
 - **Application Insights:** Select **Use existing**, then:
   - **Subscription:** Your workshop subscription
-  - **Application Insights name:** `srelab-ai` (the instance deployed by Module 1)
+  - **Application Insights name:** `srelabapp-ai` (the instance deployed by Module 1)
   
   This connects the SRE Agent to the same Application Insights instance that monitors your App Service and web app, giving it direct access to application telemetry, error traces, and performance data.
 
@@ -84,8 +84,8 @@ When we intentionally break the app in Module 5 by removing the SQL grant from t
 
 The **Logs** card on the setup page supports connecting additional log sources like Azure Data Explorer or Azure DevOps AI Search. We didn't provision either of these, so **skip this card** — the agent already has log access through two other channels:
 
-- **Application Insights** (`srelab-ai`) — configured during agent creation, provides application telemetry
-- **Azure Resources** (`rg-srelab`) — configured in the next step, gives the agent Reader access to the Log Analytics workspace (`srelab-law`) where App Service console logs, HTTP logs, and application errors are stored
+- **Application Insights** (`srelabapp-ai`) — configured during agent creation, provides application telemetry
+- **Azure Resources** (`rg-srelabapp`) — configured in the next step, gives the agent Reader access to the Log Analytics workspace (`srelabapp-law`) where App Service console logs, HTTP logs, and application errors are stored
 
 Between these two, the agent has full visibility into both application-level and infrastructure-level logs. No additional configuration needed.
 
@@ -96,7 +96,7 @@ Now the agent needs permission to read your Azure resources.
 1. Still on the setup page, find the **Azure Resources** card
 2. Click the **+** button
 3. Choose **Resource groups**
-4. Filter by your subscription and select **`rg-srelab`** (your workshop resource group)
+4. Filter by your subscription and select **`rg-srelabapp`** (your workshop resource group)
 5. Click **Next** to review permissions
 6. The agent will request **Reader** role on the resource group — this is sufficient for the workshop (the agent can query logs and metrics, but cannot modify resources)
 7. Click **Add resource group**

@@ -20,13 +20,13 @@ All infrastructure changes MUST go through code. Never modify Azure resources di
 
 ## Architecture Overview
 
-- **App Service** (`srelab-web-{suffix}`): Linux B1 plan hosting the .NET 10 shop; endpoints `/`, `/health`, `/products`
-- **Azure SQL Database** (`srelab-sql-{suffix}` / `srelab-db`): catalog store, accessed passwordlessly via managed identity (no connection-string secrets)
-- **Managed Identity** (`srelab-id`): UAMI assigned to the web app; granted a least-privilege contained user (`db_datareader`) in Azure SQL
+- **App Service** (`srelabapp-web-{suffix}`): Linux B1 plan hosting the .NET 10 shop; endpoints `/`, `/health`, `/products`
+- **Azure SQL Database** (`srelabapp-sql-{suffix}` / `srelabapp-db`): catalog store, accessed passwordlessly via managed identity (no connection-string secrets)
+- **Managed Identity** (`srelabapp-id`): UAMI assigned to the web app; granted a least-privilege contained user (`db_datareader`) in Azure SQL
 - **Authentication chain**: Web App → User-Assigned Managed Identity → AAD token → Azure SQL contained user (`db_datareader`)
 
 ## Telemetry
 
-- **Application Insights** (`srelab-ai`, workspace-based) collects requests, dependencies, and exceptions
-- **Log Analytics** (`srelab-law`) also receives App Service platform logs (`AppServiceConsoleLogs`, `AppServiceHTTPLogs`) via diagnostic settings
+- **Application Insights** (`srelabapp-ai`, workspace-based) collects requests, dependencies, and exceptions
+- **Log Analytics** (`srelabapp-law`) also receives App Service platform logs (`AppServiceConsoleLogs`, `AppServiceHTTPLogs`) via diagnostic settings
 - The shop logs failures to stdout (`AppServiceConsoleLogs`) and they surface as `AppExceptions` in App Insights

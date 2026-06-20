@@ -18,7 +18,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       LOCATION: ${{ vars.AZURE_LOCATION || 'eastus2' }}
-      WORKLOAD: ${{ vars.WORKLOAD_NAME || 'srelab' }}
+      WORKLOAD: ${{ vars.WORKLOAD_NAME || 'srelabapp' }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -36,7 +36,8 @@ jobs:
       - name: What-If deployment preview
         if: steps.azure-login.outcome == 'success'
         run: |
-          ADMIN_OID=$(az ad signed-in-user show --query id -o tsv 2>/dev/null || az account show --query user.name -o tsv)
+          ADMIN_OID=$(az account get-access-token --resource https://management.azure.com/ --query accessToken -o tsv \
+            | python3 -c "import sys,json,base64; p=sys.stdin.read().strip().split('.')[1]; p+='='*(-len(p)%4); print(json.loads(base64.urlsafe_b64decode(p))['oid'])")
           az deployment group what-if \
             --resource-group "rg-${{ env.WORKLOAD }}" \
             --template-file workshops/appservice/infra/bicep/main.bicep \

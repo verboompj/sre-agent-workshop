@@ -31,7 +31,7 @@ The agent follows a structured investigation pattern. Here's what you'll observe
 The agent will:
 - **Parse the alert** — reads the Azure Monitor alert details
 - **Understand the scope** — identifies:
-  - Affected resource(s): your App Service, the `srelab-web-{suffix}` app
+  - Affected resource(s): your App Service, the `srelabapp-web-{suffix}` app
   - Severity: typically HIGH or CRITICAL for sustained 500 errors
   - Time window: when the errors started
 - **Begin investigation** — logs its first diagnostic action: *"Starting investigation of alert on App Service..."*
@@ -39,7 +39,7 @@ The agent will:
 Look for language like:
 ```
 Received alert: High error rate detected
-Resource: App Service / srelab-web-xxxx
+Resource: App Service / srelabapp-web-xxxx
 Severity: HIGH
 Status: ACTIVE
 Next: Querying recent logs and metrics for the affected endpoint
@@ -129,7 +129,7 @@ The agent compares the two and identifies:
 Analysis:
 - SQL grant for managed identity was present in the previous deployment
 - Current version: grant is ABSENT
-- The contained user "srelab-id" no longer exists in the database
+- The contained user "srelabapp-id" no longer exists in the database
 - Result: The managed identity cannot authenticate to Azure SQL
 
 This is the root cause.
@@ -151,7 +151,7 @@ Problem:
   HTTP 500 errors on GET /products endpoint
 
 Root Cause:
-  Managed identity "srelab-id" lost permission to Azure SQL
+  Managed identity "srelabapp-id" lost permission to Azure SQL
 
 Why:
   • Commit abc123 removed the SQL grant for the managed identity
@@ -191,7 +191,7 @@ Now the agent **takes action**:
    fix(infra): restore Azure SQL grant for managed identity
 
    Root cause analysis identified that the managed identity
-   srelab-id was missing the db_datareader grant in Azure SQL,
+   srelabapp-id was missing the db_datareader grant in Azure SQL,
    causing app authentication failures.
 
    This commit restores the SQL grant that was inadvertently
@@ -219,7 +219,7 @@ The PR description includes a summary:
 ## Root Cause Analysis
 
 ### What was wrong?
-The managed identity "srelab-id" was missing the db_datareader
+The managed identity "srelabapp-id" was missing the db_datareader
 grant in Azure SQL, preventing the application from authenticating.
 
 ### Why did it happen?
@@ -273,8 +273,8 @@ Open your browser or a terminal and test the app:
 
 ```bash
 WEB_HOST=$(az webapp show \
-  --resource-group rg-srelab \
-  --name $(az webapp list --resource-group rg-srelab --query "[0].name" -o tsv) \
+  --resource-group rg-srelabapp \
+  --name $(az webapp list --resource-group rg-srelabapp --query "[0].name" -o tsv) \
   --query defaultHostName -o tsv)
 
 # Test the health endpoint
