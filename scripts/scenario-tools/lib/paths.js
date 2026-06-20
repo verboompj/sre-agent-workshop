@@ -11,4 +11,5 @@ export const WORKSHOPS_DIR = resolve(REPO_ROOT, 'workshops');
 export const TRACKS = {
   aks: { scopeParam: 'clusterId' },
   vm: { scopeParam: 'logAnalyticsResourceId' },
+  appservice: { scopeParam: 'logAnalyticsResourceId' },
 };
