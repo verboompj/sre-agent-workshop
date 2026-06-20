@@ -1,0 +1,51 @@
+# Validates App Service Bicep on push and pull requests.
+# Syntax validation (no creds) + optional what-if when AZURE_CREDENTIALS is set.
+name: Validate App Service Infrastructure
+
+on:
+  push:
+    branches: [main]
+    paths: ['workshops/appservice/infra/**']
+  pull_request:
+    paths: ['workshops/appservice/infra/**']
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    env:
+      LOCATION: ${{ vars.AZURE_LOCATION || 'eastus2' }}
+      WORKLOAD: ${{ vars.WORKLOAD_NAME || 'srelab' }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Validate Bicep syntax
+        run: az bicep build --file workshops/appservice/infra/bicep/main.bicep --stdout > /dev/null
+
+      - name: Azure Login
+        id: azure-login
+        uses: azure/login@v2
+        continue-on-error: true
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: What-If deployment preview
+        if: steps.azure-login.outcome == 'success'
+        run: |
+          ADMIN_OID=$(az ad signed-in-user show --query id -o tsv 2>/dev/null || az account show --query user.name -o tsv)
+          az deployment group what-if \
+            --resource-group "rg-${{ env.WORKLOAD }}" \
+            --template-file workshops/appservice/infra/bicep/main.bicep \
+            --parameters workshops/appservice/infra/bicep/main.bicepparam \
+              location="${{ env.LOCATION }}" \
+              workloadName="${{ env.WORKLOAD }}" \
+              sqlAadAdminObjectId="$ADMIN_OID"
+
+      - name: Skip notice
+        if: steps.azure-login.outcome != 'success'
+        run: |
+          echo "::notice::Azure credentials not configured — skipped what-if preview. Bicep syntax validation passed."
