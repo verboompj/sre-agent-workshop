@@ -20,6 +20,7 @@ New to the Azure SRE Agent? Read the shared concept layer first:
 | --- | --- | --- |
 | **AKS / Cloud-Native** | Kubernetes workload identity, CosmosDB RBAC fault injection | [workshops/aks/](workshops/aks/README.md) |
 | **VM / Enterprise Migration** | Windows Server + IIS, Bastion access, approval-gated remediation | [workshops/vm/](workshops/vm/README.md) |
+| **App Service / PaaS** | .NET 10 shop on App Service (Linux) + Azure SQL, passwordless managed identity | [workshops/appservice/](workshops/appservice/README.md) |
 
 Each track follows the same loop: **deploy from code → inject a realistic fault →
 watch the agent investigate → apply controlled remediation → capture a postmortem.**

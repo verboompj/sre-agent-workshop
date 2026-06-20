@@ -1,0 +1,30 @@
+# App Service / PaaS SRE Workshop
+
+Deploy Azure App Service (Linux) + Azure SQL, run a .NET 10 shop with passwordless
+managed-identity auth, then break and recover it with the Azure SRE Agent.
+
+## Workshop modules
+
+- [00. Prerequisites](./docs/00-prerequisites.md)
+- [01. Deploy Infrastructure](./docs/01-deploy-infrastructure.md)
+- [02. Deploy Application](./docs/02-deploy-application.md)
+- [03. Onboard SRE Agent](./docs/03-onboard-sre-agent.md)
+- [04. Configure Incident Response](./docs/04-configure-incident-response.md)
+- [90. Watch SRE Agent](./docs/90-watch-sre-agent.md)
+- [99. Cleanup](./docs/99-cleanup.md)
+
+## Scenarios
+
+<!-- BEGIN SCENARIOS -->
+<!-- END SCENARIOS -->
+
+## Cost
+
+| Resource | ~Cost/hr | Notes |
+| --- | --- | --- |
+| App Service Plan (B1 Linux) | ~$0.018 | Always On enabled |
+| Azure SQL Database (Basic) | ~$0.007 | 5 DTU, minimal |
+| Log Analytics + App Insights | ~$0.10 | Standard monitoring |
+| SRE Agent | ~$0.50 | Depends on model/volume |
+
+Remember to run the **Cleanup** module (99) when done — idle resources still bill.
