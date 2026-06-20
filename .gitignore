@@ -11,3 +11,7 @@ node_modules/
 # VM workshop runtime artifacts (investigation traces, postmortems, audit logs)
 workshops/vm/output/*
 !workshops/vm/output/.gitkeep
+
+# App Service workshop: .NET build artifacts
+workshops/appservice/**/bin/
+workshops/appservice/**/obj/
