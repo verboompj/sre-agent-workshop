@@ -61,6 +61,23 @@ jobs:
             --src-path app.zip \
             --type zip
 
+      - name: Deploy zip to staging slot
+        run: |
+          SLOT=$(az webapp deployment slot list \
+            --resource-group "rg-${{ env.WORKLOAD }}" \
+            --name "${{ steps.names.outputs.web_app }}" \
+            --query "[?name=='staging'].name" -o tsv)
+          if [ -n "$SLOT" ]; then
+            az webapp deploy \
+              --resource-group "rg-${{ env.WORKLOAD }}" \
+              --name "${{ steps.names.outputs.web_app }}" \
+              --slot staging \
+              --src-path app.zip \
+              --type zip
+          else
+            echo "::notice::staging slot not present — skipping slot seed. Re-run 'Deploy App Service Infrastructure' to provision it (needed for the canary-bad-release scenario)."
+          fi
+
       - name: Install sqlcmd (go-sqlcmd)
         run: |
           curl -fsSL -o sqlcmd.tar.bz2 \

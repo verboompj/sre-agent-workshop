@@ -86,20 +86,17 @@ module appservice 'modules/appservice.bicep' = {
 }
 
 // ──────────────────────────────────────────────
-// 5. SCENARIO ALERTS — wired by first scenario cycle
-//    When the first appservice scenario lands, the generator emits
-//    modules/scenario-alerts.bicep; add the module call here:
-//
-//    module scenarioAlerts 'modules/scenario-alerts.bicep' = {
-//      name: 'scenario-alerts'
-//      params: {
-//        location: location
-//        workloadName: workloadName
-//        tags: tags
-//        logAnalyticsResourceId: monitoring.outputs.logAnalyticsId
-//      }
-//    }
+// 5. SCENARIO ALERTS — generated aggregator wired to the Log Analytics scope
 // ──────────────────────────────────────────────
+module scenarioAlerts 'modules/scenario-alerts.bicep' = {
+  name: 'scenario-alerts'
+  params: {
+    location: location
+    workloadName: workloadName
+    tags: tags
+    logAnalyticsResourceId: monitoring.outputs.logAnalyticsId
+  }
+}
 
 // ── Outputs ──────────────────────────────────
 @description('Web App name')

@@ -9,11 +9,11 @@ var app = builder.Build();
 var connectionString = Environment.GetEnvironmentVariable("AZURE_SQL_CONNECTIONSTRING") ?? "";
 
 // Shared catalog query — both / and /products read through this one statement.
-const string ProductsQuery = "SELECT Id, Name, Price FROM dbo.Products ORDER BY Id";
+const string ProductsQuery = "SELECT Id, Name, Price, Sku FROM dbo.Products ORDER BY Id";
 
 // Release theme — visible A/B marker (v1 stable green / v2 canary red).
-const string Accent = "#1a7f37";      // v1 green
-const string BadgeText = "v1 · stable";
+const string Accent = "#d32f2f";      // v2 red
+const string BadgeText = "v2 · canary";
 
 // Health check — intentionally does NOT verify DB connectivity (liveness only)
 app.MapGet("/health", () => Results.Json(new { status = "healthy", timestamp = DateTime.UtcNow }));
