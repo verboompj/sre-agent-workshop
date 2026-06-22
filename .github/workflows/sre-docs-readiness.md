@@ -46,16 +46,16 @@ docs silently: you open a single draft PR for human review.
 - `workshops/*/docs/90-watch*.md`
 - `docs/connect-github-to-sre-agent.md`
 
-**Out of scope — do NOT touch:**
+**Out of scope:**
 
-- `docs/00-what-is-sre-agent.md`, `docs/01-why-sre-agent.md`, `docs/02-how-it-works.md`, and
-  `workshops/aks/knowledge/operational-guidelines.md` — the **SRE Agent Docs Freshness** workflow
-  owns upstream accuracy for those.
-- Generated artifacts — `workshops/*/scenarios/INDEX.md`,
+- **Upstream accuracy** for `docs/00-what-is-sre-agent.md`, `docs/01-why-sre-agent.md`,
+  `docs/02-how-it-works.md`, and `workshops/aks/knowledge/operational-guidelines.md` — the
+  **SRE Agent Docs Freshness** workflow owns that. You may still check these files for **internal
+  integrity** (links, placeholders), but do not re-verify their product claims against upstream.
+- **Do not touch at all** — generated artifacts (`workshops/*/scenarios/INDEX.md`,
   `workshops/*/infra/bicep/modules/scenario-alerts.bicep`, and the README
-  `<!-- BEGIN SCENARIOS -->`…`<!-- END SCENARIOS -->` tables — the scenario tooling and the
-  `validate-scenarios.yml` workflow own those.
-- Anything under `docs/superpowers/**`.
+  `<!-- BEGIN SCENARIOS -->`…`<!-- END SCENARIOS -->` tables; the scenario tooling and the
+  `validate-scenarios.yml` workflow own those) and anything under `docs/superpowers/**`.
 
 ## Checks
 
