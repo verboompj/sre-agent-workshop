@@ -59,14 +59,7 @@ Once deployment completes, you'll land on the agent overview page. Click **Set u
 
 ### Add Your GitHub Repository
 
-1. Look for the **Code** card on the setup page
-2. Click the **+** button to add a code source
-3. Choose **GitHub**
-4. Click **Authenticate** and sign in with your GitHub account
-5. After authentication, you'll see a list of your repositories
-6. **Select your forked workshop repository** (the one you created in Module 0)
-7. Click **Add repository**
-8. Wait for the connection to verify — you should see a **green checkmark** on the Code card
+Follow **[Connect GitHub to the SRE Agent → Connect your code repository](../../../docs/connect-github-to-sre-agent.md#connect-your-code-repository)** to connect your **forked workshop repository** (the one you created in Module 0) via the **Code** card. Come back here once the Code card shows a green checkmark.
 
 ### Why This Matters
 
@@ -129,16 +122,13 @@ The operational guidelines tell the agent to **always fix through code** — nev
 
 This creates a full audit trail: incident → investigation → issue → PR → deployment.
 
-## Enable the GitHub Tool
+## Set up the GitHub Connector
 
-For the SRE Agent to create GitHub issues and assign them to `@copilot`, it needs the GitHub tool enabled.
+For the SRE Agent to **create GitHub issues and assign them to `@copilot`**, connect the GitHub **connector**.
 
-1. In the SRE Agent portal, go to **Capabilities** → **Tools** in the left sidebar
-2. Find the **DevOps** category in the Built-in Tools section
-3. Locate the tools related to GitHub (CreateGitHubIssue, CreateGitHubIssueComment, FetchGitHubIssue, FetchGitHubIssueComments, FetchGitHubIssues) and **enable** them
-4. The agent may ask you to authenticate with GitHub — follow the prompts to connect your GitHub account. This won't happen if you've provided the right authorization previously while adding code.
+Follow **[Connect GitHub to the SRE Agent → Set up the GitHub connector](../../../docs/connect-github-to-sre-agent.md#set-up-the-github-connector)**, then verify the connection per that guide.
 
-> **Why this matters:** Without the GitHub tool, the agent can investigate and diagnose issues but cannot create issues or PRs on your repository. With it enabled, the full remediation loop works: SRE Agent detects fault → creates issue → `@copilot` fixes code → CI/CD deploys.
+> **Why this matters:** Without the GitHub connector, the agent can investigate and diagnose issues but cannot create issues or PRs on your repository. With it connected, the full remediation loop works: SRE Agent detects fault → files an issue → assigns `@copilot` → `@copilot` fixes the code and opens a PR → an operator runs the deploy workflow.
 
 ## Team Onboarding
 
