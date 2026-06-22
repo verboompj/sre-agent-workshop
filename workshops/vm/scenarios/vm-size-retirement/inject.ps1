@@ -4,7 +4,11 @@ param(
     [string]$ResourceGroup = "rg-srelabvm",
     [string]$Workload = "srelabvm"
 )
-$ErrorActionPreference = 'Stop'
+# Note: $ErrorActionPreference is deliberately NOT 'Stop' here. This injector
+# branches on $LASTEXITCODE from `az vm show` / `az network nic show` returning
+# non-zero (the normal "resource does not exist yet" path), mirroring the sibling
+# VM injectors. 'Stop' would turn those expected non-zero exits into terminating
+# errors when $PSNativeCommandUseErrorActionPreference is enabled.
 
 $vnetName = "$Workload-vnet"
 $subnetName = "$Workload-subnet"
