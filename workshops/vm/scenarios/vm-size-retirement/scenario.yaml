@@ -1,0 +1,26 @@
+id: vm-size-retirement
+title: VM Size Retirement (SKU Discontinuation)
+track: vm
+summary: One-line description of the fault and its user-visible symptom.
+severity: 3
+estimatedMinutes: 20
+difficulty: beginner
+learningObjectives:
+  - Describe what the attendee learns from this scenario.
+signal:
+  alertModule: alert.bicep
+  alertName: vm-size-retirement-alert
+inject:
+  bash: inject.sh
+  powershell: inject.ps1
+validate:
+  bash: validate.sh
+  powershell: validate.ps1
+remediate:
+  - action: restore
+    bash: remediate.sh
+    powershell: remediate.ps1
+    description: Undo the injected fault.
+investigation:
+  query: query.kql
+docPage: README.md
