@@ -37,6 +37,10 @@ documentation. You never change docs silently — you open a single draft PR for
 Do **not** touch track setup docs or scenario walkthroughs — those describe this repo's own
 code, not upstream behavior.
 
+> **Boundary:** The **SRE Agent Docs Readiness** workflow owns internal integrity for all docs and
+> upstream accuracy for the track setup docs and `docs/connect-github-to-sre-agent.md`. Do not add
+> those files to this workflow's scope.
+
 ## Upstream sources
 
 Fetch the current Azure SRE Agent documentation under `learn.microsoft.com` (the SRE Agent
