@@ -6,6 +6,12 @@ Use the same incident platform pattern as the AKS track:
 2. Create an incident response plan scoped to VM workshop alerts.
 3. Use **Review-style approvals** for remediation in this VM track.
 
+> **No GitHub issue logging on this track.** Unlike the AKS and App Service tracks, the VM track's
+> remediation is **approval-gated** and runs through `Invoke-ApprovedRemediation` — the SRE Agent
+> never files GitHub issues or opens PRs here. If you onboard the agent using
+> [Connect GitHub to the SRE Agent](../../../docs/connect-github-to-sre-agent.md), connecting the
+> **code repository** is enough; **skip the GitHub connector / issue-logging step**.
+
 ## Approval-gated execution
 
 Remediation always runs through `Invoke-ApprovedRemediation.ps1`, which requires a CHG/INC ticket and explicit `APPROVE` confirmation, then writes an audit entry. Available actions:
