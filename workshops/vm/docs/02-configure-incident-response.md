@@ -22,6 +22,7 @@ Remediation always runs through `Invoke-ApprovedRemediation.ps1`, which requires
 | `cleanup-temp` | Clears everything under `C:\Temp` | Agent policy forbids arbitrary deletes but allows approved Temp cleanup |
 | `start-iis-app-pool` | Restarts the target IIS app pool | Scenario 2 remediation |
 | `stop-cpu-runaway` | Stops the sustained CPU workload | Scenario 3 remediation |
+| `migrate-vm-size` | Resizes every VM on a retiring size to the current target (`Standard_D2s_v5`) | Scenario 4 (VM size retirement) migration |
 
 Example:
 
