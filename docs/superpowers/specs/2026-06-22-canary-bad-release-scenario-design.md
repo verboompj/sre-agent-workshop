@@ -3,7 +3,9 @@
 The first break scenario for the **`appservice`** track. A "v2" shop release with a SQL
 schema-mismatch bug is rolled out to a **staging deployment slot** and given **50% canary traffic**,
 so roughly half of `/products` calls return `500` while `/health` stays green and the production slot
-is unaffected. The SRE Agent detects the partial outage, correlates it to the canary slot, rolls the
+is unaffected. The v2 build also **reskins the shop green→red** and badges itself `v2 · canary`, so
+anyone refreshing the live site can *see* which slot they landed on while only `/products` actually
+fails. The SRE Agent detects the partial outage, correlates it to the canary slot, rolls the
 canary back operationally, and drives the durable fix through a GitHub issue → `@copilot` PR (GitOps).
 
 This is the "first break scenario" cycle that the
@@ -40,6 +42,7 @@ The novelty is the **partial / intermittent** signal (a naive uptime check misse
 | A/B mechanism | **Deployment slots / canary** (`staging` slot + traffic routing) | THE idiomatic App Service feature; distinct from AKS/VM. |
 | Fault | **A real code regression** deployed to the canary slot | Most realistic "bad release"; authentic bug, not a simulated chaos flag. |
 | The bug | `/products` query references a non-existent `Sku` column → `SqlException: Invalid column name 'Sku'` → caught → `500` | One-line, plausible "code shipped ahead of the DB migration"; diagnosable from the exception text. `/health` (no DB call) stays green. |
+| Visible A/B marker | The **v2** build reskins `/` green→**red**, badges itself `v2 · canary`, and flips the **Add to cart** button red | A *didactic* marker so learners can see which slot served them; cosmetic, rides along with the `Sku` regression as a believable "v2 release". |
 | Traffic | **Canary split** — `az webapp traffic-routing set --distribution staging=50` | ~50% of `/products` fail → intermittent 5xx, the truest "A/B test catches a bad variant" signal. |
 | Bad-build delivery | **Self-contained overlay** — a committed `Program.regression.cs`; `inject` builds it locally and zip-deploys to the slot | Self-contained scenario; synchronous local scripts consistent with AKS/VM; no git mutation at inject time. |
 | Detection | **App Insights `AppRequests` 5xx** on `/products`, alert scoped to the Log Analytics workspace | Both slots are configured with the **same** App Insights connection string (set explicitly on the slot), so the canary's telemetry lands in the same App Insights / Log Analytics workspace — no slot-level diagnostic wiring is needed. |
@@ -112,25 +115,54 @@ After the production zip deploy, also deploy the **good** build to the `staging`
 (`az webapp deploy --slot staging …`). This keeps the pre-inject baseline slot healthy and gives
 remediation a clean build to redeploy. (The `sqlcmd` schema/grant steps are unchanged.)
 
+## Visible A/B marker (the `/` landing page)
+
+So a learner can *see* which release served them, the `/` landing page is themed per build and the v2
+build is unmistakably **red**. This is a **didactic** device — real releases don't self-color — but it
+makes the canary obvious in a browser and pairs with the functional fault.
+
+`src/Program.cs` (the committed **v1 / good** build) gains a server-rendered shop landing page:
+
+- A `/` handler that runs the products query — factored into a single shared `ProductsQuery` used by
+  **both** `/` and `/products` — and renders the catalog rows, a status line, a `v1 · stable` badge,
+  and a green **Add to cart** button.
+- The query runs inside a `try/catch`. On success it shows "Azure SQL: connected" (green) and the
+  rows; on failure it renders a **red error block** with the caught exception message — but the route
+  **still returns `200`**. `/` therefore never emits 5xx and never trips the alert; only `/products`
+  does. `/health` stays DB-free and green.
+
+`Program.regression.cs` (the **v2 / bad** build) is the same page reskinned **red** with a
+`v2 · canary` badge and a red button. Because it carries the `Sku` regression, its `/` renders the red
+error block (the real `Invalid column name 'Sku'` message) while still returning `200`, and its
+`/products` returns `500`. During the 50% canary, refreshing the site flips between the **green v1**
+shop and the **red v2** shop — the red one visibly broken — while `/health` stays green throughout.
+
 ## The fault artifact — `Program.regression.cs`
 
-A committed copy of `workshops/appservice/src/Program.cs` with exactly **one** change in the
-`/products` handler:
+A committed copy of `workshops/appservice/src/Program.cs` representing the **v2 release**, differing in
+**two intentional ways**: a cosmetic *reskin* (the visible A/B marker) and one *functional* regression.
 
 ```diff
-- await using var cmd = new SqlCommand("SELECT Id, Name, Price FROM dbo.Products ORDER BY Id", conn);
-+ await using var cmd = new SqlCommand("SELECT Id, Name, Price, Sku FROM dbo.Products ORDER BY Id", conn);
+  // visible A/B marker — v2 reskin (cosmetic)
+- var accent = "#1a7f37"; var badge = "v1 · stable";  // green
++ var accent = "#d32f2f"; var badge = "v2 · canary";  // red
+
+  // functional regression — the shared products query
+- const string ProductsQuery = "SELECT Id, Name, Price FROM dbo.Products ORDER BY Id";
++ const string ProductsQuery = "SELECT Id, Name, Price, Sku FROM dbo.Products ORDER BY Id";
 ```
 
 `Sku` does not exist in the `Products` schema, so SQL raises `Invalid column name 'Sku'` before any
-rows are read. The app's existing `catch` logs the exception via `ILogger.LogError` and returns
-`500`. The reader still maps `Id`/`Name`/`Price` by ordinal, so no other change is needed. The file
-compiles cleanly (`dotnet build` succeeds); the failure is purely at runtime — a genuine, reviewable
-"v2 release" bug.
+rows are read. `/products` (JSON) lets this surface as a `500`; the `/` landing page catches it and
+renders the red error block but still returns `200` (see *Visible A/B marker*). The reader still maps
+`Id`/`Name`/`Price` by ordinal, so no other change is needed. The file compiles cleanly
+(`dotnet build` succeeds); the failure is purely at runtime — a genuine, reviewable "v2 release" bug.
+The reskin is cosmetic and is **not** the fault; the durable fix targets the query (below).
 
-> Anti-drift note: the regression mirrors `src/Program.cs`; the README documents the single intended
-> diff. (An alternative is to have `inject` derive it via a one-line `sed` on a temp copy of
-> `src/Program.cs`; we choose the committed file for readability and Code-visibility.)
+> Anti-drift note: `Program.regression.cs` mirrors `src/Program.cs` line-for-line except the two diffs
+> above (the `accent`/`badge` reskin and the `Sku` query), which the scenario README documents as the
+> intended "v2" changes. (A `sed`-derived overlay was rejected: the regression should be a committed,
+> reviewable "v2 release" the SRE Agent can see in Code.)
 
 ## Inject — `inject.sh` / `inject.ps1`
 
@@ -228,7 +260,8 @@ the action name need not equal the file basename on non-VM tracks.
 
 The SRE Agent files a GitHub issue; `@copilot` opens a PR that either:
 
-- **Reverts** the `Sku` query in the app (recommended canonical fix — roll back the bad release), or
+- **Reverts** the regression's `Sku` query back to `SELECT Id, Name, Price …` (recommended canonical
+  fix — roll back the bad release; the cosmetic red reskin is harmless and need not be touched), or
 - **Forward-fixes** `db/schema.sql` to add the `Sku` column and reseed (complete the release).
 
 Merge → `deploy-appservice-app.yml` redeploys the corrected build → a clean 100%-good state. The PR is
@@ -281,7 +314,8 @@ docPage: README.md
 
 `workshops/appservice/scenarios/canary-bad-release/README.md` (the `docPage`) — a walkthrough mirroring
 the AKS scenario README: overview, prerequisites (`az`, .NET 10 SDK), the inject command, what to
-observe (intermittent `/products` 500s while `/health` is green and the production slot is fine), the
+observe (intermittent `/products` 500s while `/health` is green and the production slot is fine — and
+visually, refreshing the site flips between the **green v1** and **red v2** shop), the
 alert, the investigation query, the SRE Agent flow (detect → GitHub issue → `@copilot` revert PR +
 `restore-traffic` rollback), the validate command, and cleanup. The cost note in
 `workshops/appservice/README.md` is updated for the S1 plan.
@@ -298,7 +332,10 @@ alert, the investigation query, the SRE Agent flow (detect → GitHub issue → 
   S1 plan, the `staging` slot, and the wired `scenarioAlerts` module).
 - `az bicep build` on `scenarios/canary-bad-release/alert.bicep` → exit 0 (also run by
   `validate-scenarios.yml` CI).
-- `dotnet build` of a temp overlay (`src/` + `Program.regression.cs`) compiles (runtime-only failure).
+- `dotnet build` of `src/Program.cs` (the themed v1 landing page) and of a temp overlay
+  (`src/` + `Program.regression.cs`) both compile (the regression is runtime-only).
+- The `/` route returns `200` even when the products query fails (graceful catch), so only `/products`
+  emits 5xx — confirmed by inspecting the handler or a local run.
 - Every script ships as both `.sh` **and** `.ps1`; all `.sh` files are executable.
 - All files committed and pushed (Code-visibility constraint).
 
@@ -318,6 +355,7 @@ workshops/appservice/scenarios/INDEX.md                         (generated)
 workshops/appservice/infra/bicep/modules/scenario-alerts.bicep  (generated)
 workshops/appservice/infra/bicep/main.bicep                     (wire scenarioAlerts seam)
 workshops/appservice/infra/bicep/modules/appservice.bicep       (S1 + staging slot)
+workshops/appservice/src/Program.cs                             (themed v1 landing page; shared ProductsQuery; graceful catalog)
 workshops/appservice/README.md                                  (scenario table + cost note)
 .github/workflows/deploy-appservice-app.yml                     (seed good build to staging slot)
 ```
