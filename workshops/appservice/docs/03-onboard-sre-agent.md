@@ -104,12 +104,12 @@ With access to your resource group, the agent can:
 - Inspect **resource configurations** (Bicep deployment history, role assignments)
 - Correlate **deployment changes** with performance degradation
 
-## Upload Knowledge Files
+## Upload Knowledge Sources
 
 The SRE Agent can ingest runbooks and operational guidelines that shape how it responds to incidents. Upload the operational guidelines file included in this repository:
 
-1. On the setup page, find the **Knowledge files** card
-2. Click the **+** button to add a knowledge document
+1. On the setup page, find the **Knowledge Sources** card
+2. Select **Add File** to upload the predefined knowledge document
 3. Upload the file `workshops/appservice/knowledge/operational-guidelines.md` from your repository
 4. Wait for the green checkmark
 
