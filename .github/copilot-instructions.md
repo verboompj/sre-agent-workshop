@@ -113,8 +113,8 @@ The authoritative contract is `schemas/scenario.schema.json`.
   (and `.github/aw/actions-lock.json`) are generated — edit the `.md` and recompile with `gh aw compile`.
 - Deploy is intentionally **manual**; validation runs on push/PR. In the Actions tab, display names are
   track-qualified (e.g. **Deploy AKS Infrastructure** vs **Deploy VM Infrastructure**) — refer to them by
-  those names in docs. AKS deploy/validate workflows authenticate with the `AZURE_CREDENTIALS` secret;
-  `publish-aks-image.yml` uses `GITHUB_TOKEN`/GHCR.
+  those names in docs. AKS deploy/validate workflows authenticate via OIDC using `AZURE_CLIENT_ID`,
+  `AZURE_TENANT_ID`, and `AZURE_SUBSCRIPTION_ID` secrets; `publish-aks-image.yml` uses `GITHUB_TOKEN`/GHCR.
 
 ## Docs & the SRE Agent
 

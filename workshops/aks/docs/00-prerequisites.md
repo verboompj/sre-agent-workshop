@@ -107,52 +107,75 @@ Now all your work will be in your own fork, and the SRE Agent will open pull req
 
 ## Step 2: Create a Service Principal for GitHub Actions
 
-GitHub Actions workflows in your fork need credentials to deploy infrastructure to your Azure subscription. We'll create a service principal with Contributor access to your subscription.
+GitHub Actions workflows in your fork need credentials to deploy infrastructure to your Azure subscription. The workflows use **OpenID Connect (OIDC) federated credentials** — no long-lived client secrets are stored in GitHub. This approach is compatible with strict Azure AD tenant policies that block client-secret-based authentication.
 
-### Get Your Subscription ID
+### Get Your Subscription and Tenant IDs
 
 ```bash
 az login
 export SUBSCRIPTION_ID=$(az account show --query id -o tsv)
-echo "Your subscription ID: $SUBSCRIPTION_ID"
+export TENANT_ID=$(az account show --query tenantId -o tsv)
+echo "Subscription ID: $SUBSCRIPTION_ID"
+echo "Tenant ID:       $TENANT_ID"
 ```
 
-Keep this terminal open — you'll use `$SUBSCRIPTION_ID` in the next step.
+Keep this terminal open — you'll use these values in the next steps.
 
-### Create a Service Principal
+### Create an App Registration and Service Principal
 
 ```bash
-az ad sp create-for-rbac \
-  --name "sre-workshop-sp" \
+# Create the app registration
+export APP_ID=$(az ad app create --display-name "sre-workshop-sp" --query appId -o tsv)
+
+# Create the service principal for the app
+az ad sp create --id $APP_ID
+
+# Assign Contributor access to your subscription
+az role assignment create \
+  --assignee $APP_ID \
   --role Contributor \
-  --scopes /subscriptions/$SUBSCRIPTION_ID \
-  --json-auth
+  --scope /subscriptions/$SUBSCRIPTION_ID
+
+echo "App (Client) ID: $APP_ID"
 ```
 
-> **⚠️ Tenant policy note:** Some Azure AD tenants enforce credential lifetime policies that may cause this command to fail. If you see an error about credential expiry or policy restrictions, reset the service principal credentials with a shorter lifetime:
->
-> ```bash
-> az ad sp credential reset --name "sre-workshop-sp" --years 1
-> ```
->
-> Always delete the service principal when done with the workshop (see Module 7).
+### Add a Federated Credential for GitHub Actions
 
-This command outputs a JSON block containing the service principal credentials. **Copy the entire JSON output** — you'll paste it into GitHub next.
+Replace `{YOUR_USERNAME}` with your GitHub username:
+
+```bash
+GITHUB_USER="{YOUR_USERNAME}"
+
+az ad app federated-credential create \
+  --id $APP_ID \
+  --parameters "{
+    \"name\": \"sre-workshop-gh-actions\",
+    \"issuer\": \"https://token.actions.githubusercontent.com\",
+    \"subject\": \"repo:${GITHUB_USER}/sre-agent-workshop:ref:refs/heads/main\",
+    \"audiences\": [\"api://AzureADTokenExchange\"]
+  }"
+```
+
+> **Note:** The federated credential binds GitHub's OIDC token (issued for your `main` branch) to your app registration. No client secret is created or stored — the workflows authenticate via the short-lived OIDC token GitHub provides at runtime.
+>
+> Always delete the app registration when done with the workshop (see Module 7).
 
 ## Step 3: Configure GitHub Actions Secrets
 
-Your fork needs the service principal credentials as a GitHub Actions secret. Anyone with access to your fork can trigger workflows, so treat this secret with care.
+Your fork needs three secrets to authenticate via OIDC. These values are not sensitive credentials (no passwords or keys), but storing them as GitHub secrets avoids exposing your Azure tenant and subscription IDs in workflow logs.
 
 **Steps:**
 
 1. Go to your fork on GitHub (https://github.com/{YOUR_USERNAME}/sre-agent-workshop)
 2. Click **Settings** → **Secrets and variables** → **Actions**
 3. Click **New repository secret**
-4. Add this secret:
+4. Add these three secrets:
 
 | Secret Name | Value | How to get it |
 |-------------|-------|--------------|
-| `AZURE_CREDENTIALS` | The full JSON block from the `az ad sp create-for-rbac` command | Run the command above and copy the entire JSON output |
+| `AZURE_CLIENT_ID` | The app registration's client (application) ID | The `$APP_ID` value from the step above |
+| `AZURE_TENANT_ID` | Your Azure AD tenant ID | The `$TENANT_ID` value from the step above |
+| `AZURE_SUBSCRIPTION_ID` | Your Azure subscription ID | The `$SUBSCRIPTION_ID` value from the step above |
 
 > **Security note:** GitHub encrypts these secrets in transit and at rest. They're only exposed to workflows running in your repository and cannot be read back via the GitHub UI.
 
@@ -211,8 +234,11 @@ Before moving to Module 1, verify:
 - [ ] kubectl installed (`kubectl version --client` works)
 - [ ] GitHub account created
 - [ ] Repository forked to your account
-- [ ] Service principal created and JSON saved
-- [ ] `AZURE_CREDENTIALS` secret added to your fork
+- [ ] App registration and service principal created
+- [ ] Federated credential added to the app registration
+- [ ] `AZURE_CLIENT_ID` secret added to your fork
+- [ ] `AZURE_TENANT_ID` secret added to your fork
+- [ ] `AZURE_SUBSCRIPTION_ID` secret added to your fork
 - [ ] `WORKLOAD_NAME` variable added to your fork (if using a custom name)
 - [ ] `AZURE_LOCATION` variable added to your fork (if using a non-default region)
 - [ ] Secrets and variables are visible in Settings → Secrets and variables → Actions

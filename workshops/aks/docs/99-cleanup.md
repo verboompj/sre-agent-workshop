@@ -65,29 +65,24 @@ The SRE Agent resource itself was created in your resource group, so it was alre
 
 ## Clean Up GitHub
 
-### Remove the Service Principal (Optional)
+### Remove the App Registration (Optional)
 
-If you created a service principal specifically for this workshop and won't use it elsewhere, you can delete it:
-
-```bash
-az ad sp list --display-name "sre-workshop-sp" --query "[0].appId" -o tsv
-```
-
-This returns the app ID. Then delete the service principal:
+If you created an app registration specifically for this workshop and won't use it elsewhere, you can delete it:
 
 ```bash
-az ad sp delete --id {APP_ID}
+APP_ID=$(az ad app list --display-name "sre-workshop-sp" --query "[0].appId" -o tsv)
+az ad app delete --id $APP_ID
 ```
 
-> **If you're unsure**, you can leave the service principal in place. It doesn't incur costs. You can always delete it later.
+> **If you're unsure**, you can leave the app registration in place. It doesn't incur costs. You can always delete it later.
 
 ### Remove GitHub Actions Secrets
 
-Your fork still has the `AZURE_CREDENTIALS` secret configured. If you no longer need it, remove it:
+Your fork still has the `AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, and `AZURE_SUBSCRIPTION_ID` secrets configured. If you no longer need them, remove them:
 
 1. Go to your fork on GitHub (https://github.com/{YOUR_USERNAME}/sre-agent-workshop)
 2. Click **Settings** → **Secrets and variables** → **Actions**
-3. Click the trash icon next to `AZURE_CREDENTIALS` to delete it
+3. Click the trash icon next to each secret to delete it
 
 > **Why:** Reduces the attack surface if your fork is compromised. An attacker with access to these secrets could deploy resources to your subscription.
 

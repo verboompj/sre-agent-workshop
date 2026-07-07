@@ -36,12 +36,14 @@ jobs:
       - name: Azure Login
         uses: azure/login@v2
         with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
       - name: Resolve deploying principal object ID
         id: principal
         run: |
-          # The AZURE_CREDENTIALS service principal becomes the SQL AAD admin.
+          # The app registration (AZURE_CLIENT_ID) becomes the SQL AAD admin.
           # Derive its object id from the access token's `oid` claim so we do NOT
           # depend on Microsoft Graph / Directory Reader permissions (the workshop
           # service principal is typically Contributor-only and cannot call `az ad sp show`).

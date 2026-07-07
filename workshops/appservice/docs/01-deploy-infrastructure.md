@@ -186,9 +186,7 @@ az group create \
 The deploying service principal becomes the SQL AAD admin. Resolve its object ID:
 
 ```bash
-CLIENT_ID=$(az account show --query user.name -o tsv 2>/dev/null || \
-  echo '${{ secrets.AZURE_CREDENTIALS }}' | jq -r '.clientId')
-export SQL_ADMIN_OID=$(az ad sp show --id "$CLIENT_ID" --query id -o tsv 2>/dev/null || \
+export SQL_ADMIN_OID=$(az ad sp show --id "$APP_ID" --query id -o tsv 2>/dev/null || \
   az ad signed-in-user show --query id -o tsv)
 echo "SQL AAD admin OID: $SQL_ADMIN_OID"
 ```
