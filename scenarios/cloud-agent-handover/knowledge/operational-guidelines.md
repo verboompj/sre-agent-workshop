@@ -12,13 +12,18 @@ issue assignment, review, merge, and recovery.
 1. Investigate the alert and gather evidence before proposing a fix.
 2. Correlate failed `POST /api/feature` requests with
    `NotImplementedException` telemetry and the connected repository.
-3. Do not make direct Azure changes or edit code during incident response.
-4. Present the diagnosis and ask for explicit operator approval before creating
+3. Before requesting approval, verify that the target repository has GitHub
+   Issues enabled and that no matching handoff issue is already open.
+4. If issue creation returns HTTP 410 because Issues are disabled, do not create
+   a branch, pull request, deployment, or alternate work item. Tell the operator
+   to enable Issues or provide an approved alternative repository, then stop.
+5. Do not make direct Azure changes or edit code during incident response.
+6. Present the diagnosis and ask for explicit operator approval before creating
    a GitHub issue.
-5. After approval, create exactly one issue without an assignee.
-6. The learner reviews the created issue, then assigns
+7. After approval, create exactly one issue without an assignee.
+8. The learner reviews the created issue, then assigns
    `copilot-swe-agent`.
-7. The SRE Agent must not create a branch or pull request, merge changes, or
+9. The SRE Agent must not create a branch or pull request, merge changes, or
    deploy the application. Those steps belong to the Copilot coding agent and
    operator.
 
