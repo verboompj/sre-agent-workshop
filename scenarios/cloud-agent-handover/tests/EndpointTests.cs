@@ -19,11 +19,17 @@ public sealed class EndpointTests(HandoverAppFactory factory)
     }
 
     [Fact]
-    public async Task Feature_documents_the_initial_unfinished_state()
+    public async Task Feature_returns_completed_response()
     {
         var response = await client.PostAsync("/api/feature", content: null);
+        var payload = await response.Content.ReadFromJsonAsync<FeatureResponse>();
 
-        Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal(
+            new FeatureResponse(
+                "completed",
+                "The unfinished feature is now implemented."),
+            payload);
     }
 
     [Fact]
@@ -36,4 +42,5 @@ public sealed class EndpointTests(HandoverAppFactory factory)
     }
 
     private sealed record HealthResponse(string Status);
+    private sealed record FeatureResponse(string Status, string Message);
 }
