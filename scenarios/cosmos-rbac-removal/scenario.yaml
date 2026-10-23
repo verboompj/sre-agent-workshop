@@ -1,0 +1,52 @@
+id: cosmos-rbac-removal
+title: CosmosDB RBAC Removal
+platform: Azure Kubernetes Service
+incidentType: Dependency authorization failure
+summary: The app's managed-identity CosmosDB role assignment is deleted, so /items returns HTTP 500 while /health stays green.
+severity: 3
+estimatedMinutes: 25
+difficulty: intermediate
+costProfile: high
+learningObjectives:
+  - Distinguish liveness (healthy) from dependency failure (500 on /items).
+  - Trace 5xx errors in ContainerLogV2 to a missing CosmosDB RBAC role assignment.
+  - Drive remediation through a GitHub issue / @copilot PR (GitOps), with a manual fallback.
+guide: README.md
+pages:
+  - stage: prerequisites
+    path: docs/00-prerequisites.md
+  - stage: deploy-infrastructure
+    path: docs/01-deploy-infrastructure.md
+  - optional: true
+    path: docs/02-deploy-application.md
+  - stage: onboard-sre-agent
+    path: docs/03-onboard-sre-agent.md
+  - stage: configure-incident-response
+    path: docs/04-configure-incident-response.md
+  - stage: run-observe-scenario
+    path: docs/90-watch-sre-agent.md
+  - stage: cleanup
+    path: docs/99-cleanup.md
+setup:
+  bash: scripts/setup.sh
+  powershell: scripts/setup.ps1
+signal:
+  alertModule: infra/bicep/modules/alert.bicep
+  alertName: http-500-errors
+inject:
+  bash: scripts/inject.sh
+  powershell: scripts/inject.ps1
+validate:
+  bash: scripts/validate.sh
+  powershell: scripts/validate.ps1
+cleanup:
+  bash: scripts/cleanup.sh
+  powershell: scripts/cleanup.ps1
+remediate:
+  - action: restore-cosmos-rbac
+    bash: scripts/remediate.sh
+    powershell: scripts/remediate.ps1
+    description: Recreate the Cosmos DB Built-in Data Contributor role assignment for the workload UAMI and restart pods.
+investigation:
+  query: investigation/query.kql
+source: src/app

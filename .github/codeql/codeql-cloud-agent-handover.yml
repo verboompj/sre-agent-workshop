@@ -1,0 +1,4 @@
+paths:
+  - scenarios/cloud-agent-handover/src
+  - .github/workflows/codeql-cloud-agent-handover.yml
+  - .github/workflows/validate-appservice-app.yml

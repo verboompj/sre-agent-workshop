@@ -1,0 +1,81 @@
+name: Validate Cloud Agent Handover Application
+
+on:
+  pull_request:
+    paths:
+      - 'scenarios/cloud-agent-handover/**'
+      - '.github/workflows/validate-appservice-app.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'scenarios/cloud-agent-handover/**'
+      - '.github/workflows/validate-appservice-app.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: Test Cloud Agent Handover capsule
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Setup Python
+        if: github.event_name == 'pull_request'
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Fetch pull request base
+        if: github.event_name == 'pull_request'
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: >-
+          git fetch --no-tags origin
+          "+refs/heads/${BASE_REF}:refs/remotes/origin/${BASE_REF}"
+
+      - name: Test application with coverage
+        shell: bash
+        run: |
+          dotnet test scenarios/cloud-agent-handover/tests/HandoverApp.Tests.csproj \
+            --collect:"XPlat Code Coverage" \
+            --results-directory scenarios/cloud-agent-handover/TestResults \
+            -- \
+            DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=cobertura \
+            DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.ExcludeByFile=**/*.razor
+
+          coverage_file="$(
+            find scenarios/cloud-agent-handover/TestResults \
+              -name coverage.cobertura.xml \
+              -print -quit
+          )"
+
+          if [[ -z "$coverage_file" ]]; then
+            echo "Coverlet did not produce coverage.cobertura.xml." >&2
+            exit 1
+          fi
+
+          echo "COVERAGE_FILE=$coverage_file" >> "$GITHUB_ENV"
+
+      - name: Install changed-line coverage tool
+        if: github.event_name == 'pull_request'
+        run: python -m pip install diff-cover==10.4.1
+
+      - name: Enforce 100% changed-line coverage
+        if: github.event_name == 'pull_request'
+        env:
+          COMPARE_BRANCH: origin/${{ github.base_ref }}
+        run: >-
+          diff-cover "$COVERAGE_FILE"
+          --compare-branch="$COMPARE_BRANCH"
+          --fail-under=100
+          --show-uncovered

@@ -1,0 +1,28 @@
+name: Validate Workload Identity Break Infrastructure
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'scenarios/workload-identity-break/infra/**'
+      - '.github/workflows/validate-workload-identity-break-infra.yml'
+  pull_request:
+    paths:
+      - 'scenarios/workload-identity-break/infra/**'
+      - '.github/workflows/validate-workload-identity-break-infra.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: Build Workload Identity Break Bicep
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Validate Bicep syntax
+        run: |
+          az bicep build --file scenarios/workload-identity-break/infra/bicep/main.bicep --stdout >/dev/null
+          az bicep build --file scenarios/workload-identity-break/infra/bicep/modules/alert.bicep --stdout >/dev/null

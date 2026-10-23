@@ -1,0 +1,17 @@
+{
+  "name": "scenario-tools",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Validation and generation tooling for SRE Agent Workshop scenarios.",
+  "scripts": {
+    "test": "node --test",
+    "validate": "node bin/validate.js",
+    "generate": "node bin/generate.js"
+  },
+  "dependencies": {
+    "ajv": "^8.17.1",
+    "ajv-formats": "^3.0.1",
+    "js-yaml": "^4.1.0"
+  }
+}

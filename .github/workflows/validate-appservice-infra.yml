@@ -1,0 +1,28 @@
+name: Validate Cloud Agent Handover Infrastructure
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'scenarios/cloud-agent-handover/infra/**'
+      - '.github/workflows/validate-appservice-infra.yml'
+  pull_request:
+    paths:
+      - 'scenarios/cloud-agent-handover/infra/**'
+      - '.github/workflows/validate-appservice-infra.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: Build Cloud Agent Handover Bicep
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Validate Bicep syntax
+        run: |
+          az bicep build --file scenarios/cloud-agent-handover/infra/bicep/main.bicep --stdout >/dev/null
+          az bicep build --file scenarios/cloud-agent-handover/infra/bicep/modules/alert.bicep --stdout >/dev/null

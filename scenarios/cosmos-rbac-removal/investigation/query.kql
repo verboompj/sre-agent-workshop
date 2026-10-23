@@ -1,0 +1,7 @@
+ContainerLogV2
+| where PodNamespace == "cosmos-rbac-removal"
+| where TimeGenerated > ago(1h)
+| extend LogText = tostring(LogMessage)
+| where LogText has "Failed to read items from CosmosDB" or LogText has "RBAC" or LogText has "Forbidden" or LogText has "StatusCode: 500"
+| project TimeGenerated, PodName, ContainerName, LogText, LogLevel
+| top 50 by TimeGenerated desc

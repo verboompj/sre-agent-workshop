@@ -1,0 +1,232 @@
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { mkdirSync, rmSync, symlinkSync, writeFileSync, existsSync, realpathSync } from 'node:fs';
+import { resolve } from 'node:path';
+import * as validateApi from '../lib/validate.js';
+import {
+  MANDATORY_PAGE_STAGES,
+  makeValidator,
+  checkScenario,
+  findDuplicateActions,
+} from '../lib/validate.js';
+
+const pages = MANDATORY_PAGE_STAGES.map((stage, index) => ({
+  stage,
+  path: `docs/${String(index).padStart(2, '0')}-${stage}.md`,
+}));
+
+const baseManifest = {
+  id: 'disk-full',
+  title: 'Disk Full',
+  platform: 'Azure VM',
+  incidentType: 'Capacity',
+  summary: 'C: fills up',
+  severity: 2,
+  estimatedMinutes: 25,
+  difficulty: 'beginner',
+  costProfile: 'medium',
+  guide: 'README.md',
+  pages,
+  setup: { bash: 'scripts/setup.sh', powershell: 'scripts/setup.ps1' },
+  inject: { bash: 'scripts/inject.sh', powershell: 'scripts/inject.ps1' },
+  validate: { bash: 'scripts/validate.sh', powershell: 'scripts/validate.ps1' },
+  cleanup: { bash: 'scripts/cleanup.sh', powershell: 'scripts/cleanup.ps1' },
+  signal: { alertModule: 'alerts/disk-full.bicep', alertName: 'Disk Full' },
+  investigation: { query: 'queries/disk-full.kql' },
+  source: 'src/app/server.js',
+  tests: 'tests/integration.spec.js',
+  remediate: [
+    { action: 'restart', bash: 'remediate/restart.sh', powershell: 'remediate/restart.ps1', description: 'Restart' },
+  ],
+};
+
+const present = new Set([
+  'scenario.yaml',
+  'README.md',
+  ...pages.map((page) => page.path),
+  'setup',
+  'setup.sh',
+  'setup.ps1',
+  'inject.sh',
+  'inject.ps1',
+  'validate.sh',
+  'validate.ps1',
+  'cleanup.sh',
+  'cleanup.ps1',
+  'disk-full.bicep',
+  'disk-full.kql',
+  'server.js',
+  'integration.spec.js',
+  'restart.sh',
+  'restart.ps1',
+]);
+
+const fileExists = (p) => present.has(p.split('/').pop());
+
+test('validation library exports only the top-level scenario validator API', () => {
+  assert.deepEqual(Object.keys(validateApi).sort(), [
+    'MANDATORY_PAGE_STAGES',
+    'checkPageFlow',
+    'checkReferencedPath',
+    'checkScenario',
+    'findDuplicateActions',
+    'makeValidator',
+  ]);
+});
+
+function makeTempScenarioDir() {
+  const root = resolve(import.meta.dirname, `validate-temp-${Date.now()}-${Math.random().toString(16).slice(2)}`);
+  mkdirSync(root, { recursive: true });
+  const dir = resolve(root, 'disk-full');
+  mkdirSync(dir, { recursive: true });
+  return { root, dir };
+}
+
+test('valid scenario yields no cross-field errors', () => {
+  const validate = makeValidator();
+  assert.ok(validate(baseManifest), JSON.stringify(validate.errors));
+
+  const errs = checkScenario(
+    { id: 'disk-full', manifest: baseManifest, dir: '/x/disk-full' },
+    { fileExists }
+  );
+  assert.deepEqual(errs, []);
+});
+
+test('manifest schema requires an ordered page flow after migration', () => {
+  const validate = makeValidator();
+  const manifest = { ...baseManifest };
+  delete manifest.pages;
+
+  assert.equal(validate(manifest), false);
+  assert.ok(
+    validate.errors.some(
+      (error) => error.keyword === 'required' && error.params.missingProperty === 'pages',
+    ),
+  );
+});
+
+test('manifest page entries are either mandatory stages or optional pages', () => {
+  const validate = makeValidator();
+  const invalid = {
+    ...baseManifest,
+    pages: [
+      ...pages,
+      { stage: 'appendix', path: 'docs/appendix.md' },
+      { stage: 'cleanup', optional: true, path: 'docs/both.md' },
+    ],
+  };
+
+  assert.equal(validate(invalid), false);
+});
+
+test('missing guide is reported', () => {
+  const manifest = { ...baseManifest };
+  delete manifest.guide;
+
+  const errs = checkScenario(
+    { id: 'disk-full', manifest, dir: '/x/disk-full' },
+    { fileExists }
+  );
+  assert.ok(errs.includes('guide is required'));
+});
+
+test('setup and cleanup pairs are validated', () => {
+  const errs = checkScenario(
+    { id: 'disk-full', manifest: baseManifest, dir: '/x/disk-full' },
+    { fileExists: (p) => fileExists(p) && !p.endsWith('cleanup.ps1') }
+  );
+  assert.ok(errs.some((e) => e.includes('cleanup.powershell references missing file scripts/cleanup.ps1')));
+});
+
+test('paths must remain inside the scenario directory', () => {
+  const manifest = {
+    ...baseManifest,
+    cleanup: { ...baseManifest.cleanup, bash: '../shared/cleanup.sh' },
+    guide: '/repo/scenarios/disk-full/README.md',
+  };
+
+  const errs = checkScenario(
+    { id: 'disk-full', manifest, dir: '/repo/scenarios/disk-full' },
+    { fileExists }
+  );
+
+  assert.ok(errs.includes('guide must stay inside the scenario directory'));
+  assert.ok(errs.includes('cleanup.bash must stay inside the scenario directory'));
+});
+
+test('symlinked references cannot escape the scenario directory', (t) => {
+  const { root, dir } = makeTempScenarioDir();
+  t.after(() => rmSync(root, { recursive: true, force: true }));
+
+  const outside = resolve(root, 'outside-guide.md');
+  writeFileSync(outside, '# outside\n');
+  symlinkSync(outside, resolve(dir, 'README.md'));
+  writeFileSync(resolve(dir, 'scenario.yaml'), 'id: disk-full\nplatform: Azure VM\n');
+
+  const manifest = { id: 'disk-full', guide: 'README.md' };
+
+  const errs = checkScenario(
+    { id: 'disk-full', manifest, dir },
+    { fileExists: existsSync, realpath: realpathSync }
+  );
+
+  assert.ok(errs.includes('guide must stay inside the scenario directory'));
+});
+
+test('broken symlinks are reported as missing files', (t) => {
+  const { root, dir } = makeTempScenarioDir();
+  t.after(() => rmSync(root, { recursive: true, force: true }));
+
+  symlinkSync(resolve(root, 'missing-guide.md'), resolve(dir, 'README.md'));
+  writeFileSync(resolve(dir, 'scenario.yaml'), 'id: disk-full\nplatform: Azure VM\n');
+
+  const manifest = { id: 'disk-full', guide: 'README.md' };
+
+  const errs = checkScenario(
+    { id: 'disk-full', manifest, dir },
+    { fileExists: existsSync, realpath: realpathSync }
+  );
+
+  assert.ok(errs.includes('guide references missing file README.md'));
+});
+
+test('optional remediate block may be omitted', () => {
+  const manifest = { ...baseManifest };
+  delete manifest.remediate;
+
+  const errs = checkScenario(
+    { id: 'disk-full', manifest, dir: '/x/disk-full' },
+    { fileExists }
+  );
+  assert.deepEqual(errs, []);
+});
+
+test('Bash fields require executability regardless of filename extension', () => {
+  const manifest = {
+    ...baseManifest,
+    setup: { bash: 'scripts/setup', powershell: 'scripts/setup.ps1' },
+  };
+
+  const errs = checkScenario(
+    { id: 'disk-full', manifest, dir: '/x/disk-full' },
+    { fileExists, isExecutable: () => false }
+  );
+
+  assert.ok(errs.some((e) => e.includes('setup.bash scripts/setup must be executable')));
+  assert.ok(!errs.some((e) => e.includes('setup.powershell')));
+});
+
+test('findDuplicateActions returns sorted duplicate action names', () => {
+  const manifest = {
+    ...baseManifest,
+    remediate: [
+      { action: 'restart', bash: 'remediate/restart.sh', powershell: 'remediate/restart.ps1', description: 'Restart' },
+      { action: 'cleanup', bash: 'remediate/cleanup.sh', powershell: 'remediate/cleanup.ps1', description: 'Cleanup' },
+      { action: 'restart', bash: 'remediate/restart-2.sh', powershell: 'remediate/restart-2.ps1', description: 'Restart again' },
+      { action: 'cleanup', bash: 'remediate/cleanup-2.sh', powershell: 'remediate/cleanup-2.ps1', description: 'Cleanup again' },
+    ],
+  };
+
+  assert.deepEqual(findDuplicateActions(manifest), ['cleanup', 'restart']);
+});
